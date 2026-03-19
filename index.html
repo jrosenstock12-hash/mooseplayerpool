@@ -215,7 +215,7 @@ function matchPlayer(espnName) {
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 // Hardcoded First Four points (these never change)
-const HARDCODED_PTS = { "Quentin Copeland": 16, "Boopie Miller": 15, "Jaron Pierre Jr.": 18, "Isaiah Nelson": 23, "Alex Rapp": 12, "Nick Boyd": 27, "John Blackwell": 22, "Nolan Winter": 8, "Amare Bynum": 12, "John Mobley Jr.": 15, "Bruce Thornton": 10, "Devin Royal": 14, "Wes Enis": 4 };
+const HARDCODED_PTS = { "Quentin Copeland": 16, "Boopie Miller": 15, "Jaron Pierre Jr.": 18, "Isaiah Nelson": 23, "Alex Rapp": 12, "Nick Boyd": 27, "John Blackwell": 22, "Nolan Winter": 8, "Amare Bynum": 12, "John Mobley Jr.": 15, "Bruce Thornton": 10, "Devin Royal": 14, "Wes Enis": 4, "Daniel Punch": 16 };
 // Game IDs that are scheduled for future dates - never fetch box scores for these
 // These will be removed as games are played
 const BLOCKED_GAME_IDS = new Set([
@@ -402,9 +402,9 @@ async function fetchAll() {
 }
 
 function getPlayerPts(p) {
-  let pts = livePts[p.n] || 0;
-  if (HARDCODED_PTS[p.n]) pts += HARDCODED_PTS[p.n];
-  return pts;
+  // If player has hardcoded pts, use ONLY that (prevents doubling with live feed)
+  if (HARDCODED_PTS[p.n] !== undefined) return HARDCODED_PTS[p.n];
+  return livePts[p.n] || 0;
 }
 function teamTotal(t) { return t.players.reduce((s,p) => s + getPlayerPts(p), 0); }
 
