@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>March Madness 2026 · Pool Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0d0f14;--sur:#161920;--sur2:#1e2230;--bd:rgba(255,255,255,.07);--bd2:rgba(255,255,255,.13);--tx:#f0f2f8;--mu:#7a8099;--ac:#e8873a;--ac2:#4fc3f7;--gr:#5dd98c;--go:#f5c842;--si:#b0b8cc;--br:#c8845a;--re:#f06565}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;font-size:15px;min-height:100vh}
+.tick-out{background:var(--ac);overflow:hidden;height:32px;display:flex;align-items:center}
+.tick-in{display:flex;animation:tk 60s linear infinite;white-space:nowrap;width:max-content}
+.ti{font-family:'DM Mono',monospace;font-size:12px;color:#fff;padding:0 28px;letter-spacing:.04em}
+.ti span{opacity:.65;margin-right:6px}
+@keyframes tk{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+header{padding:2rem 2rem 1rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;border-bottom:1px solid var(--bd)}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,6vw,64px);letter-spacing:.02em;line-height:1}
+.logo span{color:var(--ac)}
+.logo-sub{font-size:13px;color:var(--mu);margin-top:4px;letter-spacing:.06em;text-transform:uppercase}
+.badge{display:inline-flex;align-items:center;gap:6px;background:var(--sur2);border:1px solid var(--bd2);border-radius:20px;padding:6px 14px;font-size:12px;color:var(--mu)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--gr);animation:pu 2s infinite}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:.3}}
+.lupd{font-size:11px;color:var(--mu);margin-top:6px;text-align:right}
+nav{display:flex;gap:4px;padding:1rem 2rem 0;border-bottom:1px solid var(--bd);flex-wrap:wrap}
+.tb{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;padding:8px 18px 10px;border:none;background:transparent;color:var(--mu);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s}
+.tb:hover{color:var(--tx)}.tb.on{color:var(--ac);border-bottom-color:var(--ac)}
+main{padding:1.5rem 2rem;max-width:1100px;margin:0 auto}
+.tp{display:none}.tp.on{display:block}
+.sg{display:flex;flex-direction:column;gap:8px}
+.sr{display:grid;grid-template-columns:44px 1fr auto auto;align-items:center;gap:12px;background:var(--sur);border:1px solid var(--bd);border-radius:12px;padding:14px 18px;cursor:pointer;transition:border-color .15s,background .15s}
+.sr:hover{border-color:var(--bd2);background:var(--sur2)}
+.sr.r1{border-color:rgba(245,200,66,.3)}.sr.r2{border-color:rgba(176,184,204,.25)}.sr.r3{border-color:rgba(200,132,90,.25)}
+.rn{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--mu);text-align:center;line-height:1}
+.r1 .rn{color:var(--go)}.r2 .rn{color:var(--si)}.r3 .rn{color:var(--br)}
+.sn{font-size:17px;font-weight:600}.sm{font-size:12px;color:var(--mu);margin-top:2px}
+.bw{height:3px;background:var(--sur2);border-radius:2px;margin-top:6px;overflow:hidden}
+.bf{height:100%;background:linear-gradient(90deg,var(--ac),var(--ac2));border-radius:2px}
+.ths{display:flex;flex-wrap:wrap;gap:3px;max-width:200px}
+.th{width:28px;height:28px;border-radius:50%;background:var(--sur2);border:1px solid var(--bd2);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:var(--mu);flex-shrink:0}
+.th img{width:100%;height:100%;object-fit:cover}
+.pb{font-family:'Bebas Neue',sans-serif;font-size:32px;line-height:1}
+.plbl{font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);padding:8px 12px;border-bottom:1px solid var(--bd)}
+th.r{text-align:right}
+td{padding:9px 12px;border-bottom:1px solid var(--bd);vertical-align:middle}
+tr:last-child td{border-bottom:none}tr:hover td{background:var(--sur)}
+.av{border-radius:50%;background:var(--sur2);border:1px solid var(--bd2);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--mu);flex-shrink:0}
+.av img{width:100%;height:100%;object-fit:cover}
+.pn{font-weight:500;font-size:14px}.ps{font-size:12px;color:var(--mu)}
+.pi{display:inline-block;background:var(--sur2);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;font-size:12px;color:var(--mu);white-space:nowrap}
+.pt{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;text-align:right}
+.el{opacity:.38}
+.scg{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.gc{background:var(--sur);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+.gch{padding:9px 14px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.gcr{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--mu)}
+.gf{color:var(--mu);font-size:11px}.gl{color:var(--gr);font-size:11px;font-weight:600;animation:pu 2s infinite}.gu{color:var(--ac2);font-size:11px}
+.gt{display:flex;justify-content:space-between;align-items:center;padding:9px 14px}
+.gt+.gt{border-top:1px solid var(--bd)}
+.tl{font-size:13px;font-weight:500}.tl.lo{color:var(--mu);font-weight:400}
+.ts{font-family:'DM Mono',monospace;font-size:17px;font-weight:500}.ts.lo{color:var(--mu)}
+.dg{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.dc{background:var(--sur);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+.dch{padding:12px 16px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.dco{font-size:15px;font-weight:600}.dct{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--ac)}
+.dp{display:flex;align-items:center;gap:9px;padding:7px 16px;border-bottom:1px solid var(--bd)}
+.dp:last-child{border-bottom:none}
+.dn{font-size:11px;color:var(--mu);width:18px;font-family:'DM Mono',monospace;flex-shrink:0}
+.dna{font-size:13px;font-weight:500}.dsc{font-size:11px;color:var(--mu)}
+.dpt{font-family:'DM Mono',monospace;font-size:13px;color:var(--ac);font-weight:500;margin-left:auto;flex-shrink:0}
+.back{background:var(--sur);border:1px solid var(--bd);color:var(--mu);font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 16px;border-radius:8px;cursor:pointer;margin-bottom:1.5rem}
+.sl{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin:1.5rem 0 10px}
+.sb input{width:100%;max-width:400px;background:var(--sur);border:1px solid var(--bd2);border-radius:8px;padding:10px 16px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;margin-bottom:1rem}
+.sb input:focus{border-color:var(--ac)}.sb input::placeholder{color:var(--mu)}
+
+@media(max-width:600px){header,nav,main{padding-left:1rem;padding-right:1rem}.sr{grid-template-columns:36px 1fr auto}.ths{display:none}.dg,.scg{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="tick-out"><div class="tick-in" id="ticker">Loading...</div></div>
+<header>
+  <div>
+    <div class="logo">March <span>Madness</span> 2026</div>
+    <div class="logo-sub">10-Team Pool &nbsp;·&nbsp; Individual Player Points</div>
+  </div>
+  <div style="text-align:right">
+    <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
+      <div class="badge"><div class="dot"></div> Auto-updates every 30s</div>
+      <button id="refresh-btn" onclick="manualRefresh()" style="background:var(--sur2);border:1px solid var(--bd2);color:var(--mu);font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 14px;border-radius:20px;cursor:pointer">↻ Refresh</button>
+    </div>
+    <div class="lupd" id="lupd">Connecting...</div>
+  </div>
+</header>
+<nav>
+  <button class="tb on" onclick="showTab('standings')">🏆 Standings</button>
+  <button class="tb" onclick="showTab('players')">👤 Players</button>
+  <button class="tb" onclick="showTab('scores')">🏀 Scores</button>
+  <button class="tb" onclick="showTab('draft')">📋 Draft</button>
+</nav>
+<main>
+  <div id="tab-standings" class="tp on"></div>
+  <div id="tab-players" class="tp"></div>
+  <div id="tab-scores" class="tp"></div>
+  <div id="tab-draft" class="tp"></div>
+</main>
+
+
+<script>
+// ── ROSTER ────────────────────────────────────────────────────────────────────
+const TEAMS = [
+  {name:"Derse",players:[
+    {n:"Cameron Boozer",s:"Duke",id:5041935},{n:"Tyler Tanner",s:"Vanderbilt",id:5187600},{n:"Aday Mara",s:"Michigan",id:5174983},
+    {n:"Meleek Thomas",s:"Arkansas",id:5174980},{n:"Nate Ament",s:"Tennessee",id:5164559},{n:"Bryce Hopkins",s:"St. John's",id:4702640},
+    {n:"Tyler Bilodeau",s:"UCLA",id:4703417},{n:"Nolan Winter",s:"Wisconsin",id:5104944},{n:"Henri Veesaar",s:"UNC",id:5254153},
+    {n:"Flory Bidunga",s:"Kansas",id:5041941},{n:"Rienk Mast",s:"Nebraska",id:4592677},{n:"Chance Mallory",s:"Virginia",id:5107222},
+    {n:"Tru Washington",s:"Miami",id:null},{n:"Kanon Catchings",s:"Georgia",id:null},{n:"Dailyn Swain",s:"Texas",id:5107218},
+    {n:"Amare Bynum",s:"Ohio State",id:null}]},
+  {name:"Rosh",players:[
+    {n:"Darius Acuff Jr.",s:"Arkansas",id:5142620},{n:"Jeremy Fears Jr.",s:"Michigan State",id:4711255},{n:"Fletcher Loyer",s:"Purdue",id:4866808},
+    {n:"Tarris Reed Jr.",s:"UConn",id:5105809},{n:"Jaxon Kohler",s:"Michigan State",id:4702655},{n:"Malik Reneau",s:"Miami",id:5105798},
+    {n:"Trevon Brazile",s:"Arkansas",id:4698719},{n:"Coen Carr",s:"Michigan State",id:5041943},{n:"Paulius Murauskas",s:"St. Mary's",id:5174954},
+    {n:"Donovan Dent",s:"UCLA",id:5107782},{n:"Nikolas Khamenia",s:"Duke",id:null},{n:"Wes Enis",s:"South Florida",id:5313560},
+    {n:"Oziyah Sellers",s:"St. John's",id:null},{n:"Jaylen Petty",s:"Texas Tech",id:null},{n:"Jalen Washington",s:"UNC",id:4433625},
+    {n:"Marcus Millender",s:"Georgia",id:null}]},
+  {name:"Rooster",players:[
+    {n:"Yaxel Lendeborg",s:"Michigan",id:5175737},{n:"Keaton Wagler",s:"Illinois",id:5254165},{n:"Graham Ike",s:"Gonzaga",id:4703396},
+    {n:"Elliot Cadeau",s:"Michigan",id:4869764},{n:"Pryce Sandfort",s:"Nebraska",id:4858604},{n:"Trey McKenney",s:"Michigan",id:5313527},
+    {n:"Latrell Wrightsell",s:"Alabama",id:5082278},{n:"Tyon Grant-Foster",s:"Gonzaga",id:5313579},{n:"Isaiah Nelson",s:"South Florida",id:null},
+    {n:"Melvin Council Jr.",s:"Kansas",id:4903054},{n:"Tomislav Ivisic",s:"Illinois",id:5313583},{n:"Christian Hammond",s:"Santa Clara",id:null},
+    {n:"Tyler Perkins",s:"Villanova",id:null},{n:"Daniel Punch",s:"TCU",id:null},{n:"Riley Kugel",s:"UCF",id:null},
+    {n:"Alex Rapp",s:"Wisconsin",id:null}]},
+  {name:"Smigel/Boog",players:[
+    {n:"Thomas Haugh",s:"Florida",id:5080489},{n:"Darryn Peterson",s:"Kansas",id:5041955},{n:"Trey Kaufman-Renn",s:"Purdue",id:4897438},
+    {n:"John Blackwell",s:"Wisconsin",id:5103630},{n:"Ja'Kobi Gillespie",s:"Tennessee",id:5107968},{n:"Otega Oweh",s:"Kentucky",id:4704612},
+    {n:"Mikel Brown Jr.",s:"Louisville",id:5101761},{n:"Patrick Ngongba II",s:"Duke",id:5041939},{n:"MJ Collins Jr.",s:"Utah State",id:5313577},
+    {n:"Dame Sarr",s:"Duke",id:5041963},{n:"Roddy Gayle Jr.",s:"Michigan",id:4703413},{n:"Mercy Miller",s:"Houston",id:4873086},
+    {n:"Terrence Hill Jr.",s:"VCU",id:null},{n:"Dominique Daniels Jr.",s:"Cal Baptist",id:null},{n:"Kur Tang",s:"Michigan State",id:null},
+    {n:"Trey Campbell",s:"Northern Iowa",id:null}]},
+  {name:"Faller",players:[
+    {n:"Brayden Burries",s:"Arizona",id:5082206},{n:"Jaden Bradley",s:"Arizona",id:4432737},{n:"Boogie Fland",s:"Florida",id:5238195},
+    {n:"Alex Karaban",s:"UConn",id:4917149},{n:"Joseph Tugler",s:"Houston",id:4703428},{n:"Ryan Conwell",s:"Louisville",id:5107157},
+    {n:"Tre White",s:"Kansas",id:5105643},{n:"Billy Richmond III",s:"Arkansas",id:5106063},{n:"Mario Saint-Supery",s:"Gonzaga",id:5313582},
+    {n:"Shelton Henderson",s:"Miami",id:null},{n:"Jeremiah Wilkinson",s:"Georgia",id:5107234},{n:"Denzel Aberdeen",s:"Kentucky",id:4427779},
+    {n:"Jack Hadley",s:"Louisville",id:null},{n:"Julian Estrella",s:"Tennessee",id:null},{n:"Lazar Djokovic",s:"VCU",id:null},
+    {n:"Preston Edmead",s:"Hofstra",id:null}]},
+  {name:"Schachter",players:[
+    {n:"Kingston Flemings",s:"Houston",id:5142574},{n:"Emanuel Sharp",s:"Houston",id:5106058},{n:"Zuby Ejiofor",s:"St. John's",id:5106262},
+    {n:"Christian Anderson",s:"Texas Tech",id:5060701},{n:"Ivan Kharchenkov",s:"Arizona",id:5313578},{n:"Motiejus Krivas",s:"Arizona",id:null},
+    {n:"Rueben Chinyelu",s:"Florida",id:5174971},{n:"Carson Cooper",s:"Michigan State",id:4703416},{n:"Sam Lewis",s:"Virginia",id:5176232},
+    {n:"Chris Cenac Jr.",s:"Houston",id:5041946},{n:"Trent Perry",s:"UCLA",id:5079423},{n:"Boopie Miller",s:"SMU",id:4898283},
+    {n:"LeJuan Watts",s:"Texas Tech",id:null},{n:"AK Okereke",s:"Vanderbilt",id:5107202},{n:"Matas Voketeitas",s:"Texas",id:null},
+    {n:"Eric Dailey Jr.",s:"UCLA",id:null}]},
+  {name:"Millen/Ilan",players:[
+    {n:"Alex Condon",s:"Florida",id:5041957},{n:"Morez Johnson Jr.",s:"Michigan",id:4873153},{n:"Thijs De Ridder",s:"Virginia",id:null},
+    {n:"Braden Smith",s:"Purdue",id:5105854},{n:"David Mirkovic",s:"Illinois",id:5311832},{n:"Oscar Cluff",s:"Purdue",id:4702714},
+    {n:"Malik Thomas",s:"Virginia",id:5313581},{n:"Mikey Lewis",s:"St. Mary's",id:null},{n:"Urban Klavzar",s:"Florida",id:5313574},
+    {n:"Nimari Burnett",s:"Michigan",id:4703375},{n:"Joshua Dent",s:"St. Mary's",id:null},{n:"Malique Ewin",s:"Arkansas",id:null},
+    {n:"Camden Cox",s:"Purdue",id:null},{n:"Daniel Jacobson",s:"Purdue",id:null},{n:"Isaac McKneely",s:"Louisville",id:null},
+    {n:"Elijah Mahi",s:"Santa Clara",id:null}]},
+  {name:"Klinge/Timmy",players:[
+    {n:"Isaiah Evans",s:"Duke",id:5061585},{n:"Koa Peat",s:"Arizona",id:5041953},{n:"Tamin Lipsey",s:"Iowa State",id:5106254},
+    {n:"Xaivian Lee",s:"Florida",id:5107169},{n:"Braylon Mullins",s:"UConn",id:5196916},{n:"Andrej Stojakovic",s:"Illinois",id:5175007},
+    {n:"Tre Donaldson",s:"Miami",id:5041982},{n:"Donovan Atwell",s:"Texas Tech",id:5187492},{n:"Seth Trimble",s:"UNC",id:5106268},
+    {n:"Killyan Toure",s:"Iowa State",id:5313575},{n:"Anthony Dell'Orso",s:"Arizona",id:5108166},{n:"John Mobley Jr.",s:"Ohio State",id:5079424},
+    {n:"Joshua Bateman",s:"Iowa State",id:null},{n:"Braden Frager",s:"Nebraska",id:null},{n:"Ian Jackson",s:"St. John's",id:null},
+    {n:"D.J. Wagner",s:"Arkansas",id:null}]},
+  {name:"Philips",players:[
+    {n:"Milan Momcilovic",s:"Iowa State",id:4848637},{n:"Joshua Jefferson",s:"Iowa State",id:4870564},{n:"Milos Uzan",s:"Houston",id:5106272},
+    {n:"Nick Boyd",s:"Wisconsin",id:4702654},{n:"Robert Wright III",s:"BYU",id:5060709},{n:"Cayden Boozer",s:"Duke",id:5041937},
+    {n:"Mark Mitchell",s:"Missouri",id:4702660},{n:"Bennett Stirtz",s:"Iowa",id:5107175},{n:"Tavari Johnson",s:"Akron",id:5108059},
+    {n:"Cruz Davis",s:"Hofstra",id:null},{n:"Blake Buchanan",s:"Iowa State",id:4432738},{n:"Rashaun Agee",s:"Texas A&M",id:null},
+    {n:"Jaron Pierre Jr.",s:"SMU",id:4703115},{n:"Duke Brennan",s:"Villanova",id:null},{n:"Larry Johnson",s:"McNeese",id:null},
+    {n:"Quentin Copeland",s:"NC State",id:null}]},
+  {name:"Eisner",players:[
+    {n:"AJ Dybantsa",s:"BYU",id:5041952},{n:"Labaron Philon Jr.",s:"Alabama",id:4873090},{n:"Duke Miles",s:"Vanderbilt",id:5107196},
+    {n:"Solo Ball",s:"UConn",id:4895737},{n:"Tyler Nickel",s:"Vanderbilt",id:4703409},{n:"Kylan Boswell",s:"Illinois",id:4684269},
+    {n:"Tobe Awaka",s:"Arizona",id:4703435},{n:"Bruce Thornton",s:"Ohio State",id:5105837},{n:"Alijah Allen",s:"Alabama",id:null},
+    {n:"Silas Demary Jr.",s:"UConn",id:5054083},{n:"Mason Falslev",s:"Utah State",id:5107098},{n:"Devin McGlockton",s:"Vanderbilt",id:null},
+    {n:"Jaylen Sherrell",s:"Alabama",id:null},{n:"Devin Royal",s:"Ohio State",id:null},{n:"Blue Cain",s:"Georgia",id:null},
+    {n:"Skyy Clark",s:"UCLA",id:null}]}
+];
+
+// ── NAME MATCHING ─────────────────────────────────────────────────────────────
+// Build lookup: last name -> player (and full name normalized -> player)
+const nameIndex = {};
+TEAMS.forEach(t => t.players.forEach(p => {
+  // Full name normalized
+  const full = p.n.toLowerCase().replace(/[^a-z]/g,'');
+  nameIndex[full] = p;
+  // First + Last combined
+  const parts = p.n.toLowerCase().split(' ').filter(Boolean);
+  if (parts.length >= 2) {
+    const firstLast = parts[0].replace(/[^a-z]/g,'') + parts[parts.length-1].replace(/[^a-z]/g,'');
+    nameIndex[firstLast] = p;
+  }
+}));
+
+function matchPlayer(espnName) {
+  if (!espnName) return null;
+  // Try full normalized name first (most reliable)
+  const full = espnName.toLowerCase().replace(/[^a-z]/g,'');
+  if (nameIndex[full]) return nameIndex[full];
+  // Try first + last name combined (no last-name-only - too many false matches e.g. Terry Anderson -> Christian Anderson)
+  const parts = espnName.toLowerCase().split(' ').filter(Boolean);
+  const last = parts[parts.length-1].replace(/[^a-z]/g,'');
+  if (parts.length >= 2) {
+    const firstLast = parts[0].replace(/[^a-z]/g,'') + last;
+    if (nameIndex[firstLast]) return nameIndex[firstLast];
+  }
+  // REMOVED: last-name-only matching - causes too many false positives
+  return null;
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+// Hardcoded First Four points (these never change)
+const HARDCODED_PTS = { "Quentin Copeland": 16, "Boopie Miller": 15, "Jaron Pierre Jr.": 18 };
+// Game IDs that are scheduled for future dates - never fetch box scores for these
+// These will be removed as games are played
+const BLOCKED_GAME_IDS = new Set([
+  '401856520', // TTU vs AKR - Fri 3/20
+]);
+// Hardcoded eliminations for First Four losers (not in ESPN tournament data)
+const HARDCODED_ELIM = ["NC State", "SMU"];
+let livePts = {};
+let liveGames = [];
+let elimIds = new Set();
+let elimSchools = new Set();
+let curTab = 'standings';
+
+function isEliminated(p) {
+  const sl = p.s.toLowerCase().trim();
+  // Check hardcoded First Four eliminations (exact match)
+  if (HARDCODED_ELIM.some(e => sl === e.toLowerCase().trim())) return true;
+  // Check ESPN-derived eliminations (exact match only - no fuzzy/contains)
+  if (elimSchools.has(sl)) return true;
+  // Check common alternate school name formats ESPN uses
+  for (const e of elimSchools) {
+    // Only match if the full player school name equals the full elim school name
+    // or one is a clean prefix of the other (e.g. "ohio state" == "ohio state buckeyes")
+    if (e.startsWith(sl + ' ') || sl.startsWith(e + ' ')) return true;
+    if (e === sl) return true;
+  }
+  return false;
+}
+
+// ── ESPN FETCH ────────────────────────────────────────────────────────────────
+async function fetchAll() {
+  try {
+    // Step 1: get scoreboard - CONFIRMED WORKING URL from test
+    const sbUrl = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?groups=100&seasontype=3&limit=100&_=${Date.now()}`;
+    const sbRes = await fetch(sbUrl);
+    if (!sbRes.ok) throw new Error('Scoreboard ' + sbRes.status);
+    const sbData = await sbRes.json();
+    const events = sbData.events || [];
+
+    // Keep all events for display purposes (scores tab)
+    const tourneyGames = events.filter(g => {
+      const notes = g.notes || [];
+      const name = (g.name || '').toLowerCase();
+      const season = g.season?.slug || '';
+      return notes.some(n => (n.headline||'').toLowerCase().includes('championship') || (n.headline||'').toLowerCase().includes('ncaa')) ||
+             name.includes('ncaa') ||
+             season.includes('tournament') ||
+             (g.competitions||[]).some(c => (c.notes||[]).some(n => (n.headline||'').toLowerCase().includes('championship'))) ||
+             (g.competitions||[]).some(c => (c.competitors||[]).some(t => t.curatedRank?.current > 0 || t.seed));
+    });
+    liveGames = tourneyGames.length > 0 ? tourneyGames : events;
+
+    // Step 2: track eliminations from FINAL games only (NCAA tourney only - 3/19/26+)
+    const activeIds = [];
+    elimIds = new Set();
+    elimSchools = new Set();
+    tourneyGames.forEach(g => {
+      const st = g.status?.type?.name;
+      const stateType = g.status?.type?.state;
+      const dateStr = g.date || g.competitions?.[0]?.date || '';
+      const datePart = dateStr.substring(0, 10);
+      if (datePart && datePart < '2026-03-19') return; // skip pre-tournament games
+      if (st === 'STATUS_IN_PROGRESS' || st === 'STATUS_FINAL' || st === 'STATUS_HALFTIME' || stateType === 'in') {
+        activeIds.push(g.id);
+        if (st === 'STATUS_FINAL') {
+          (g.competitions||[]).forEach(c => {
+            (c.competitors||[]).forEach(comp => {
+              if (comp.winner === false) {
+                elimIds.add(comp.team?.id);
+                const loc = (comp.team?.location || '').toLowerCase();
+                const name = (comp.team?.name || '').toLowerCase();
+                const display = (comp.team?.displayName || '').toLowerCase();
+                if (loc) elimSchools.add(loc);
+                if (name) elimSchools.add(name);
+                if (display) elimSchools.add(display);
+              }
+            });
+          });
+        }
+      }
+    });
+
+    // Step 3: fetch box scores ONLY for NCAA tournament games (3/19/26 or later) that have started/finished
+    const newPts = {};
+    const boxScoreIds = tourneyGames
+      .filter(g => {
+        const st = g.status?.type?.name;
+        const stateType = g.status?.type?.state;
+        // Must be in-progress, halftime, or final
+        if (st !== 'STATUS_IN_PROGRESS' && st !== 'STATUS_HALFTIME' && st !== 'STATUS_FINAL' && stateType !== 'in') return false;
+        // CRITICAL: skip any game that started before March 19 2026 (conference tournaments etc)
+        const dateStr = g.date || g.competitions?.[0]?.date || '';
+        const datePart = dateStr.substring(0, 10); // "2026-03-19"
+        if (datePart && datePart < '2026-03-19') return false;
+        return true;
+      })
+      .filter(g => !BLOCKED_GAME_IDS.has(g.id))
+      .map(g => g.id);
+
+    await Promise.all(boxScoreIds.map(async id => {
+      try {
+        const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary?event=${id}&_=${Date.now()}`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // CRITICAL GUARD: Only count points if the game has actually been played.
+        const gameStatus = data.header?.competitions?.[0]?.status?.type?.name || '';
+        const gameState = data.header?.competitions?.[0]?.status?.type?.state || '';
+        const homeScore = parseInt(data.header?.competitions?.[0]?.competitors?.[0]?.score) || 0;
+        const awayScore = parseInt(data.header?.competitions?.[0]?.competitors?.[1]?.score) || 0;
+        const totalScore = homeScore + awayScore;
+        const teams = (data.header?.competitions?.[0]?.competitors||[]).map(c=>c.team?.abbreviation||c.team?.location||'').join(' vs ');
+        console.log(`Box score check: ${teams} | status=${gameStatus} | state=${gameState} | score=${homeScore}-${awayScore}`);
+        const isScheduled = gameStatus === 'STATUS_SCHEDULED' || gameStatus === 'STATUS_PRE' || gameState === 'pre';
+        if (isScheduled) { console.log(`SKIPPING ${teams} - scheduled`); return; }
+        if (totalScore === 0 && gameState !== 'in') { console.log(`SKIPPING ${teams} - no score and not live`); return; }
+
+        const playerGroups = data.boxscore?.players || [];
+
+        let foundAny = false;
+        playerGroups.forEach(teamGroup => {
+          (teamGroup.statistics || []).forEach(sg => {
+            const labels = sg.labels || sg.names || [];
+            let ptsIdx = labels.indexOf('PTS');
+            if (ptsIdx === -1) ptsIdx = 1; // confirmed: PTS is index 1
+
+            (sg.athletes || []).forEach(athlete => {
+              const espnName = athlete.athlete?.displayName;
+              if (!espnName) return;
+              const stats = athlete.stats || [];
+              if (!stats.length) return;
+              if (stats.every(s => s === '0' || s === '-' || s === '--' || s === '')) return;
+              // MIN is always index 0 - if player has no minutes they didnt play in this game
+              const minStr = stats[0] || '';
+              const minVal = parseFloat(minStr);
+              if (!minStr || minStr === '-' || minStr === '--' || minStr === '0' || minVal === 0) return;
+              const pts = parseInt(stats[ptsIdx]);
+              if (isNaN(pts) || pts < 0) return;
+              const player = matchPlayer(espnName);
+              if (player) {
+                newPts[player.n] = (newPts[player.n] || 0) + pts;
+                if (pts > 0) foundAny = true;
+              }
+            });
+          });
+        });
+
+        // Fallback for live games: ESPN sometimes delays stats population.
+        // Use the plays array to count points per player from scoring plays.
+        if (!foundAny) {
+          const playerTotals = {};
+          (data.plays || []).forEach(play => {
+            if (!play.scoringPlay) return;
+            const name = play.participants?.[0]?.athlete?.displayName || '';
+            if (!name) return;
+            // Each scoring play has a homeScore/awayScore delta we can track
+            // Simpler: use pointsAfter if available
+            const pts = play.pointsScored || play.scoreValue;
+            if (pts && pts > 0) {
+              playerTotals[name] = (playerTotals[name] || 0) + pts;
+            }
+          });
+          Object.entries(playerTotals).forEach(([name, pts]) => {
+            const player = matchPlayer(name);
+            if (player && pts > 0) newPts[player.n] = (newPts[player.n] || 0) + pts;
+          });
+        }
+
+      } catch(e) { /* silent fail per game */ }
+    }));
+
+    livePts = newPts;
+    document.getElementById('lupd').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch(e) {
+    document.getElementById('lupd').textContent = 'Error: ' + e.message;
+  }
+  renderAll();
+}
+
+function getPlayerPts(p) {
+  let pts = livePts[p.n] || 0;
+  if (HARDCODED_PTS[p.n]) pts += HARDCODED_PTS[p.n];
+  return pts;
+}
+function teamTotal(t) { return t.players.reduce((s,p) => s + getPlayerPts(p), 0); }
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function img(id) {
+  if (!id) return null;
+  return `https://wsrv.nl/?url=https%3A%2F%2Fa.espncdn.com%2Fcombiner%2Fi%3Fimg%3D%2Fi%2Fheadshots%2Fmens-college-basketball%2Fplayers%2Ffull%2F${id}.png%26w%3D64%26h%3D64%26scale%3Dcrop&w=64&h=64&fit=cover&mask=circle&output=png`;
+}
+function ini(n) { return n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join(''); }
+function avt(p, sz=34) {
+  const u = img(p.id);
+  return `<div class="av" style="width:${sz}px;height:${sz}px">${u?`<img src="${u}" loading="lazy" onerror="this.style.display='none'"/>`:''}${!u?ini(p.n):''}</div>`;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderTicker();
+  if (curTab==='standings') renderStandings();
+  else if (curTab==='players') renderPlayers();
+  else if (curTab==='scores') renderScores();
+  else renderDraft();
+}
+
+function showTab(tab) {
+  curTab = tab;
+  document.querySelectorAll('.tp').forEach(p => p.classList.remove('on'));
+  document.getElementById('tab-'+tab).classList.add('on');
+  document.querySelectorAll('.tb').forEach((b,i) => b.classList.toggle('on', ['standings','players','scores','draft'][i]===tab));
+  renderAll();
+}
+
+function renderTicker() {
+  const s = TEAMS.map(t=>({n:t.name,p:teamTotal(t)})).sort((a,b)=>b.p-a.p);
+  const items = s.map((t,i)=>`<div class="ti"><span>${i+1}.</span>${t.n} ${t.p}pts</div>`);
+  document.getElementById('ticker').innerHTML = [...items,...items].join('');
+}
+
+function renderStandings() {
+  const s = TEAMS.map((t,oi)=>({t,oi,pts:teamTotal(t)})).sort((a,b)=>b.pts-a.pts);
+  const mx = Math.max(...s.map(x=>x.pts),1);
+  let h = '<div class="sg">';
+  s.forEach(({t,oi,pts},i) => {
+    const thumbs = t.players.slice(0,10).map(p => {
+      const u = img(p.id);
+      return u ? `<div class="th"><img src="${u}" loading="lazy" onerror="this.style.display='none'"/></div>` : `<div class="th">${ini(p.n)}</div>`;
+    }).join('');
+    const activePlayers = t.players.filter(p => !isEliminated(p)).length;
+    const totalPlayers = t.players.length;
+    const playerLabel = activePlayers === totalPlayers
+      ? `${totalPlayers} players`
+      : `${activePlayers} active · ${totalPlayers - activePlayers} eliminated`;
+    h += `<div class="sr ${i<3?'r'+(i+1):''}" onclick="showTeam(${oi})">
+      <div class="rn">${i+1}</div>
+      <div><div class="sn">${t.name}</div><div class="sm">${playerLabel}</div><div class="bw"><div class="bf" style="width:${Math.round(pts/mx*100)}%"></div></div></div>
+      <div class="ths">${thumbs}</div>
+      <div style="text-align:right"><div class="pb">${pts}</div><div class="plbl">pts</div></div>
+    </div>`;
+  });
+  document.getElementById('tab-standings').innerHTML = h + '</div>';
+}
+
+function showTeam(oi) {
+  const t = TEAMS[oi];
+  const ps = t.players.slice().sort((a,b)=>getPlayerPts(b)-getPlayerPts(a));
+  let h = `<button class="back" onclick="renderStandings()">← Back</button>
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:42px">${t.name}</div>
+  <div style="font-size:14px;color:var(--mu);margin:4px 0 1.5rem">${teamTotal(t)} pts · ${t.players.length} players</div>
+  <table><thead><tr><th>Player</th><th>School</th><th class="r">Pts</th></tr></thead><tbody>`;
+  ps.forEach(p => {
+    const pts = getPlayerPts(p);
+    const elim = isEliminated(p);
+    h += `<tr style="${elim?'opacity:0.4':''}"><td><div class="pn">${p.n}${elim?' ✕':''}</div></td><td><div class="ps">${p.s}</div></td><td class="pt">${pts}</td></tr>`;
+  });
+  document.getElementById('tab-standings').innerHTML = h + '</tbody></table>';
+}
+
+function renderPlayers() {
+  const all = [];
+  TEAMS.forEach(t => t.players.forEach(p => all.push({p,owner:t.name,pts:getPlayerPts(p)})));
+  all.sort((a,b)=>b.pts-a.pts);
+  let h = `<div class="sb"><input type="text" id="psrch" placeholder="Search player, school, or owner..." oninput="filterP()"/></div>
+  <table><thead><tr><th>Player</th><th>Owner</th><th class="r">Pts</th></tr></thead><tbody>`;
+  all.forEach(({p,owner,pts}) => {
+    const elim = isEliminated(p);
+    h += `<tr class="pr" style="${elim?'opacity:0.4':''}" data-q="${p.n.toLowerCase()} ${p.s.toLowerCase()} ${owner.toLowerCase()}"><td><div class="pn">${p.n}${elim?' ✕':''}</div><div class="ps">${p.s}</div></td><td><span class="pi">${owner}</span></td><td class="pt">${pts}</td></tr>`;
+  });
+  document.getElementById('tab-players').innerHTML = h + '</tbody></table>';
+}
+function filterP() {
+  const q = (document.getElementById('psrch')?.value||'').toLowerCase();
+  document.querySelectorAll('.pr').forEach(r => r.style.display=r.dataset.q.includes(q)?'':'none');
+}
+
+function renderScores() {
+  if (!liveGames.length) {
+    document.getElementById('tab-scores').innerHTML = '<p style="color:var(--mu);padding:2rem 0">No games loaded yet.</p>';
+    return;
+  }
+  const fin=[],live=[],up=[];
+  liveGames.forEach(g => {
+    const st = g.status?.type?.name;
+    const state = g.status?.type?.state;
+    if (st==='STATUS_FINAL') fin.push(g);
+    else if (st==='STATUS_IN_PROGRESS' || st==='STATUS_HALFTIME' || state==='in') live.push(g);
+    else up.push(g);
+  });
+  function gh(g) {
+    const c = g.competitions?.[0]; if(!c) return '';
+    const teams = c.competitors||[];
+    const st = g.status?.type?.name;
+    const state = g.status?.type?.state;
+    const isFin = st==='STATUS_FINAL';
+    const isHalf = st==='STATUS_HALFTIME';
+    const isLive = st==='STATUS_IN_PROGRESS' || isHalf || state==='in';
+    const stText = isHalf ? 'Halftime' : g.status?.type?.shortDetail||'';
+    const win = isFin ? teams.find(t=>t.winner) : null;
+    return `<div class="gc">
+      <div class="gch"><span class="gcr">${g.shortName||g.name||'Game'}</span><span class="${isFin?'gf':isLive?'gl':'gu'}">${isFin?'Final':isLive?'● '+stText:stText}</span></div>
+      ${teams.map(t=>{const w=win&&t.id===win.id;return`<div class="gt"><div class="tl ${isFin&&!w?'lo':''}">${t.team?.displayName||t.team?.name||''}</div><div class="ts ${isFin&&!w?'lo':''}">${t.score||'–'}</div></div>`;}).join('')}
+    </div>`;
+  }
+  let h='';
+  if(live.length) h+=`<div class="sl">Live Now</div><div class="scg">${live.map(gh).join('')}</div>`;
+  if(fin.length) h+=`<div class="sl">Final</div><div class="scg">${fin.map(gh).join('')}</div>`;
+  if(up.length) h+=`<div class="sl">Upcoming</div><div class="scg">${up.map(gh).join('')}</div>`;
+  document.getElementById('tab-scores').innerHTML = h;
+}
+
+function renderDraft() {
+  let h='<div class="dg">';
+  TEAMS.forEach(t => {
+    h+=`<div class="dc"><div class="dch"><div class="dco">${t.name}</div><div class="dct">${teamTotal(t)} pts</div></div>`;
+    t.players.forEach((p,i)=>{
+      const pts=getPlayerPts(p);
+      h+=`<div class="dp"><span class="dn">${i+1}</span><div><div class="dna">${p.n}</div><div class="dsc">${p.s}</div></div><span class="dpt">${pts}</span></div>`;
+    });
+    h+='</div>';
+  });
+  document.getElementById('tab-draft').innerHTML = h+'</div>';
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+async function manualRefresh() {
+  const btn = document.getElementById('refresh-btn');
+  btn.textContent = '↻ Refreshing...';
+  btn.style.opacity = '0.5';
+  await fetchAll();
+  btn.textContent = '↻ Refresh';
+  btn.style.opacity = '1';
+}
+renderAll();
+fetchAll();
+setInterval(fetchAll, 30000);
+</script>
+</body>
+</html>
