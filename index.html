@@ -581,7 +581,7 @@ function showTeam(oi) {
   const tdPtsStyle = 'font-family:"DM Mono",monospace;font-size:15px;font-weight:500;text-align:right;padding:6px 8px;color:var(--ac)';
   let h = `<button class="back" onclick="curTeam=null;renderStandings()">← Back</button>
   <div style="font-family:'Bebas Neue',sans-serif;font-size:42px">${t.name}</div>
-  <div style="font-size:14px;color:var(--mu);margin:4px 0 1.5rem">${teamTotal(t)} pts · ${t.players.length} players</div>
+  <div style="font-size:14px;color:var(--mu);margin:4px 0 1.5rem">${teamTotal(t)} pts · ${(()=>{const a=t.players.filter(p=>!isEliminated(p)).length,tot=t.players.length;return a===tot?`${tot} players`:`${a} active · ${tot-a} eliminated`;})()} </div>
   <div style="overflow-x:auto">
   <table style="min-width:520px"><thead><tr>
     <th style="text-align:left;padding:6px 8px">Player</th>
