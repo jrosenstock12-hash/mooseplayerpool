@@ -37,7 +37,7 @@ main{padding:1.5rem 2rem;max-width:1100px;margin:0 auto}
 .bw{height:3px;background:var(--sur2);border-radius:2px;margin-top:6px;overflow:hidden}
 .bf{height:100%;background:linear-gradient(90deg,var(--ac),var(--ac2));border-radius:2px}
 .ths{display:flex;flex-wrap:wrap;gap:3px;max-width:200px}
-.th{width:28px;height:28px;border-radius:50%;background:var(--sur2);border:1px solid var(--bd2);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:var(--mu);flex-shrink:0}
+.th{width:30px;height:30px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:var(--mu);flex-shrink:0;position:relative}
 .th img{width:100%;height:100%;object-fit:cover}
 .pb{font-family:'Bebas Neue',sans-serif;font-size:32px;line-height:1}
 .plbl{font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em}
@@ -46,8 +46,8 @@ th{text-align:left;font-size:11px;font-weight:500;text-transform:uppercase;lette
 th.r{text-align:right}
 td{padding:9px 12px;border-bottom:1px solid var(--bd);vertical-align:middle}
 tr:last-child td{border-bottom:none}tr:hover td{background:var(--sur)}
-.av{border-radius:50%;background:var(--sur2);border:1px solid var(--bd2);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--mu);flex-shrink:0}
-.av img{width:100%;height:100%;object-fit:cover}
+.av{border-radius:50%;background:var(--sur2);border:1px solid var(--bd2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--mu);flex-shrink:0;position:relative;overflow:visible}
+.av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .pn{font-weight:500;font-size:14px}.ps{font-size:12px;color:var(--mu)}
 .pi{display:inline-block;background:var(--sur2);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;font-size:12px;color:var(--mu);white-space:nowrap}
 .pt{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;text-align:right}
@@ -115,71 +115,71 @@ const TEAMS = [
     {n:"Meleek Thomas",s:"Arkansas",id:5174980},{n:"Nate Ament",s:"Tennessee",id:5164559},{n:"Bryce Hopkins",s:"St. John's",id:4702640},
     {n:"Tyler Bilodeau",s:"UCLA",id:4703417},{n:"Nolan Winter",s:"Wisconsin",id:5104944},{n:"Henri Veesaar",s:"North Carolina",id:5254153},
     {n:"Flory Bidunga",s:"Kansas",id:5041941},{n:"Rienk Mast",s:"Nebraska",id:4592677},{n:"Chance Mallory",s:"Virginia",id:5107222},
-    {n:"Tru Washington",s:"Miami",id:null},{n:"Kanon Catchings",s:"Georgia",id:null},{n:"Dailyn Swain",s:"Texas",id:5107218},
-    {n:"Amare Bynum",s:"Ohio State",id:null}]},
+    {n:"Tru Washington",s:"Miami",id:4845368},{n:"Kanon Catchings",s:"Georgia",id:null},{n:"Dailyn Swain",s:"Texas",id:5107218},
+    {n:"Amare Bynum",s:"Ohio State",id:5196946}]},
   {name:"Rosh",players:[
     {n:"Darius Acuff Jr.",s:"Arkansas",id:5142620},{n:"Jeremy Fears Jr.",s:"Michigan State",id:4711255},{n:"Fletcher Loyer",s:"Purdue",id:4866808},
     {n:"Tarris Reed Jr.",s:"UConn",id:5105809},{n:"Jaxon Kohler",s:"Michigan State",id:4702655},{n:"Malik Reneau",s:"Miami",id:5105798},
     {n:"Trevon Brazile",s:"Arkansas",id:4698719},{n:"Coen Carr",s:"Michigan State",id:5041943},{n:"Paulius Murauskas",s:"Saint Mary's",id:5174954},
-    {n:"Donovan Dent",s:"UCLA",id:5107782},{n:"Nikolas Khamenia",s:"Duke",id:null},{n:"Wes Enis",s:"South Florida",id:5313560},
-    {n:"Oziyah Sellers",s:"St. John's",id:null},{n:"Jaylen Petty",s:"Texas Tech",id:null},{n:"Jalen Washington",s:"North Carolina",id:4433625},
+    {n:"Donovan Dent",s:"UCLA",id:5107782},{n:"Nikolas Khamenia",s:"Duke",id:5144124},{n:"Wes Enis",s:"South Florida",id:5313560},
+    {n:"Oziyah Sellers",s:"St. John's",id:5105642},{n:"Jaylen Petty",s:"Texas Tech",id:5221321},{n:"Jalen Washington",s:"North Carolina",id:4433625},
     {n:"Marcus Millender",s:"Georgia",id:null}]},
   {name:"Rooster",players:[
     {n:"Yaxel Lendeborg",s:"Michigan",id:5175737},{n:"Keaton Wagler",s:"Illinois",id:5254165},{n:"Graham Ike",s:"Gonzaga",id:4703396},
     {n:"Elliot Cadeau",s:"Michigan",id:4869764},{n:"Pryce Sandfort",s:"Nebraska",id:4858604},{n:"Trey McKenney",s:"Michigan",id:5313527},
     {n:"Latrell Wrightsell",s:"Alabama",id:5082278},{n:"Tyon Grant-Foster",s:"Gonzaga",id:5313579},{n:"Isaiah Nelson",s:"South Florida",id:null},
     {n:"Melvin Council Jr.",s:"Kansas",id:4903054},{n:"Tomislav Ivisic",s:"Illinois",id:5313583},{n:"Christian Hammond",s:"Santa Clara",id:null},
-    {n:"Tyler Perkins",s:"Villanova",id:null},{n:"Daniel Punch",s:"TCU",id:null},{n:"Riley Kugel",s:"UCF",id:null},
+    {n:"Tyler Perkins",s:"Villanova",id:5182412},{n:"David Punch",s:"TCU",id:5164368},{n:"Riley Kugel",s:"UCF",id:5105529},
     {n:"Alex Rapp",s:"Wisconsin",id:null}]},
   {name:"Smigel/Boog",players:[
     {n:"Thomas Haugh",s:"Florida",id:5080489},{n:"Darryn Peterson",s:"Kansas",id:5041955},{n:"Trey Kaufman-Renn",s:"Purdue",id:4897438},
     {n:"John Blackwell",s:"Wisconsin",id:5103630},{n:"Ja'Kobi Gillespie",s:"Tennessee",id:5107968},{n:"Otega Oweh",s:"Kentucky",id:4704612},
     {n:"Mikel Brown Jr.",s:"Louisville",id:5101761},{n:"Patrick Ngongba II",s:"Duke",id:5041939},{n:"MJ Collins Jr.",s:"Utah State",id:5313577},
     {n:"Dame Sarr",s:"Duke",id:5041963},{n:"Roddy Gayle Jr.",s:"Michigan",id:4703413},{n:"Mercy Miller",s:"Houston",id:4873086},
-    {n:"Terrence Hill Jr.",s:"VCU",id:null},{n:"Dominique Daniels Jr.",s:"Cal Baptist",id:null},{n:"Kur Teng",s:"Michigan State",id:null},
-    {n:"Trey Campbell",s:"Northern Iowa",id:null}]},
+    {n:"Terrence Hill Jr.",s:"VCU",id:5060712},{n:"Dominique Daniels Jr.",s:"Cal Baptist",id:5178207},{n:"Kur Teng",s:"Michigan State",id:4873111},
+    {n:"Trey Campbell",s:"Northern Iowa",id:5107887}]},
   {name:"Faller",players:[
     {n:"Brayden Burries",s:"Arizona",id:5082206},{n:"Jaden Bradley",s:"Arizona",id:4432737},{n:"Boogie Fland",s:"Florida",id:5238195},
     {n:"Alex Karaban",s:"UConn",id:4917149},{n:"Joseph Tugler",s:"Houston",id:4703428},{n:"Ryan Conwell",s:"Louisville",id:5107157},
     {n:"Tre White",s:"Kansas",id:5105643},{n:"Billy Richmond III",s:"Arkansas",id:5106063},{n:"Mario Saint-Supery",s:"Gonzaga",id:5313582},
     {n:"Shelton Henderson",s:"Miami",id:null},{n:"Jeremiah Wilkinson",s:"Georgia",id:5107234},{n:"Denzel Aberdeen",s:"Kentucky",id:4427779},
-    {n:"J'Vonne Hadley",s:"Louisville",id:null},{n:"J.P. Estrella",s:"Tennessee",id:null},{n:"Lazar Djokovic",s:"VCU",id:null},
-    {n:"Preston Edmead",s:"Hofstra",id:null}]},
+    {n:"J'Vonne Hadley",s:"Louisville",id:null},{n:"J.P. Estrella",s:"Tennessee",id:null},{n:"Lazar Djokovic",s:"VCU",id:5175368},
+    {n:"Preston Edmead",s:"Hofstra",id:5236222}]},
   {name:"Schachter",players:[
     {n:"Kingston Flemings",s:"Houston",id:5142574},{n:"Emanuel Sharp",s:"Houston",id:5106058},{n:"Zuby Ejiofor",s:"St. John's",id:5106262},
-    {n:"Christian Anderson",s:"Texas Tech",id:5060701},{n:"Ivan Kharchenkov",s:"Arizona",id:5313578},{n:"Motiejus Krivas",s:"Arizona",id:null},
+    {n:"Christian Anderson",s:"Texas Tech",id:5060701},{n:"Ivan Kharchenkov",s:"Arizona",id:5313578},{n:"Motiejus Krivas",s:"Arizona",id:5174954},
     {n:"Rueben Chinyelu",s:"Florida",id:5174971},{n:"Carson Cooper",s:"Michigan State",id:4703416},{n:"Sam Lewis",s:"Virginia",id:5176232},
     {n:"Chris Cenac Jr.",s:"Houston",id:5041946},{n:"Trent Perry",s:"UCLA",id:5079423},{n:"Boopie Miller",s:"SMU",id:4898283},
-    {n:"LeJuan Watts",s:"Texas Tech",id:null},{n:"AK Okereke",s:"Vanderbilt",id:5107202},{n:"Matas Vokietaitis",s:"Texas",id:null},
-    {n:"Eric Dailey Jr.",s:"UCLA",id:null}]},
+    {n:"LeJuan Watts",s:"Texas Tech",id:5107312},{n:"AK Okereke",s:"Vanderbilt",id:5107202},{n:"Matas Vokietaitis",s:"Texas",id:null},
+    {n:"Eric Dailey Jr.",s:"UCLA",id:4610012}]},
   {name:"Millen/Ilan",players:[
-    {n:"Alex Condon",s:"Florida",id:5041957},{n:"Morez Johnson Jr.",s:"Michigan",id:4873153},{n:"Thijs De Ridder",s:"Virginia",id:null},
+    {n:"Alex Condon",s:"Florida",id:5041957},{n:"Morez Johnson Jr.",s:"Michigan",id:4873153},{n:"Thijs De Ridder",s:"Virginia",id:5311846},
     {n:"Braden Smith",s:"Purdue",id:5105854},{n:"David Mirkovic",s:"Illinois",id:5311832},{n:"Oscar Cluff",s:"Purdue",id:4702714},
-    {n:"Malik Thomas",s:"Virginia",id:5313581},{n:"Mikey Lewis",s:"Saint Mary's",id:null},{n:"Urban Klavzar",s:"Florida",id:5313574},
-    {n:"Nimari Burnett",s:"Michigan",id:4703375},{n:"Joshua Dent",s:"Saint Mary's",id:null},{n:"Malique Ewin",s:"Arkansas",id:null},
-    {n:"Camden Cox",s:"Purdue",id:null},{n:"Daniel Jacobson",s:"Purdue",id:null},{n:"Isaac McKneely",s:"Louisville",id:null},
+    {n:"Malik Thomas",s:"Virginia",id:5313581},{n:"Mikey Lewis",s:"Saint Mary's",id:5240980},{n:"Urban Klavzar",s:"Florida",id:5313574},
+    {n:"Nimari Burnett",s:"Michigan",id:4703375},{n:"Joshua Dent",s:"Saint Mary's",id:null},{n:"Malique Ewin",s:"Arkansas",id:5105546},
+    {n:"Camden Cox",s:"Purdue",id:null},{n:"Daniel Jacobson",s:"Purdue",id:null},{n:"Isaac McKneely",s:"Louisville",id:4712845},
     {n:"Elijah Mahi",s:"Santa Clara",id:null}]},
   {name:"Klinge/Timmy",players:[
     {n:"Isaiah Evans",s:"Duke",id:5061585},{n:"Koa Peat",s:"Arizona",id:5041953},{n:"Tamin Lipsey",s:"Iowa State",id:5106254},
     {n:"Xaivian Lee",s:"Florida",id:5107169},{n:"Braylon Mullins",s:"UConn",id:5196916},{n:"Andrej Stojakovic",s:"Illinois",id:5175007},
     {n:"Tre Donaldson",s:"Miami",id:5041982},{n:"Donovan Atwell",s:"Texas Tech",id:5187492},{n:"Seth Trimble",s:"North Carolina",id:5106268},
     {n:"Killyan Toure",s:"Iowa State",id:5313575},{n:"Anthony Dell'Orso",s:"Arizona",id:5108166},{n:"John Mobley Jr.",s:"Ohio State",id:5079424},
-    {n:"Jamarion Bateman",s:"Iowa State",id:null},{n:"Braden Frager",s:"Nebraska",id:null},{n:"Ian Jackson",s:"St. John's",id:null},
-    {n:"D.J. Wagner",s:"Arkansas",id:null}]},
+    {n:"Jamarion Batemon",s:"Iowa State",id:5217196},{n:"Braden Frager",s:"Nebraska",id:5239571},{n:"Ian Jackson",s:"St. John's",id:4869770},
+    {n:"D.J. Wagner",s:"Arkansas",id:4683777}]},
   {name:"Philips",players:[
     {n:"Milan Momcilovic",s:"Iowa State",id:4848637},{n:"Joshua Jefferson",s:"Iowa State",id:4870564},{n:"Milos Uzan",s:"Houston",id:5106272},
     {n:"Nick Boyd",s:"Wisconsin",id:4702654},{n:"Robert Wright III",s:"BYU",id:5060709},{n:"Cayden Boozer",s:"Duke",id:5041937},
     {n:"Mark Mitchell",s:"Missouri",id:4702660},{n:"Bennett Stirtz",s:"Iowa",id:5107175},{n:"Tavari Johnson",s:"Akron",id:5108059},
-    {n:"Cruz Davis",s:"Hofstra",id:null},{n:"Blake Buchanan",s:"Iowa State",id:4432738},{n:"Rashaun Agee",s:"Texas A&M",id:null},
+    {n:"Cruz Davis",s:"Hofstra",id:5107198},{n:"Blake Buchanan",s:"Iowa State",id:4432738},{n:"Rashaun Agee",s:"Texas A&M",id:4593815},
     {n:"Jaron Pierre Jr.",s:"SMU",id:4703115},{n:"Duke Brennan",s:"Villanova",id:null},{n:"Larry Johnson",s:"McNeese",id:null},
     {n:"Quentin Copeland",s:"NC State",id:null}]},
   {name:"Eisner",players:[
     {n:"AJ Dybantsa",s:"BYU",id:5041952},{n:"Labaron Philon Jr.",s:"Alabama",id:4873090},{n:"Duke Miles",s:"Vanderbilt",id:5107196},
     {n:"Solo Ball",s:"UConn",id:4895737},{n:"Tyler Nickel",s:"Vanderbilt",id:4703409},{n:"Kylan Boswell",s:"Illinois",id:4684269},
     {n:"Tobe Awaka",s:"Arizona",id:4703435},{n:"Bruce Thornton",s:"Ohio State",id:5105837},{n:"Alijah Allen",s:"Alabama",id:null},
-    {n:"Silas Demary Jr.",s:"UConn",id:5054083},{n:"Mason Falslev",s:"Utah State",id:5107098},{n:"Devin McGlockton",s:"Vanderbilt",id:null},
+    {n:"Silas Demary Jr.",s:"UConn",id:5054083},{n:"Mason Falslev",s:"Utah State",id:5107098},{n:"Devin McGlockton",s:"Vanderbilt",id:4791227},
     {n:"Aiden Sherrell",s:"Alabama",id:null},{n:"Devin Royal",s:"Ohio State",id:null},{n:"Blue Cain",s:"Georgia",id:null},
-    {n:"Skyy Clark",s:"UCLA",id:null}]}
+    {n:"Skyy Clark",s:"UCLA",id:5105794}]}
 ];
 
 // ── NAME MATCHING ─────────────────────────────────────────────────────────────
@@ -215,7 +215,28 @@ function matchPlayer(espnName) {
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 // Hardcoded First Four points (these never change)
-const HARDCODED_PTS = { "Quentin Copeland": 16, "Boopie Miller": 15, "Jaron Pierre Jr.": 18, "Isaiah Nelson": 22, "Alex Rapp": 12, "Nick Boyd": 27, "John Blackwell": 22, "Nolan Winter": 8, "Amare Bynum": 12, "John Mobley Jr.": 15, "Bruce Thornton": 10, "Devin Royal": 14, "Wes Enis": 4, "Daniel Punch": 16, "Matas Vokietaitis": 23, "Kur Teng": 3, "Kanon Catchings": 0, "Jeremiah Wilkinson": 30, "Mikel Brown Jr.": 0, "Patrick Ngongba II": 0 };
+const HARDCODED_PTS = {
+  // First Four
+  "Quentin Copeland": 16, "Boopie Miller": 15, "Jaron Pierre Jr.": 18,
+  // South Florida (eliminated R1, Louisville 83-79)
+  "Isaiah Nelson": 22, "Wes Enis": 4,
+  // Wisconsin (eliminated R1, High Point 83-82)
+  "Alex Rapp": 12, "Nick Boyd": 27, "John Blackwell": 22, "Nolan Winter": 8,
+  // Ohio State (eliminated R1, TCU 66-64)
+  "Amare Bynum": 12, "John Mobley Jr.": 15, "Bruce Thornton": 10, "Devin Royal": 14,
+  // TCU (R1 winner vs Ohio State)
+  "David Punch": 16,
+  // Michigan State (active - R1 hardcoded before live data)
+  "Matas Vokietaitis": 23, "Kur Teng": 3,
+  // Georgia (eliminated R1, Saint Louis 102-77)
+  "Kanon Catchings": 0, "Jeremiah Wilkinson": 30,
+  // Louisville (active - Mikel Brown Jr. out injured, Patrick Ngongba II active)
+  "Mikel Brown Jr.": 0, "Patrick Ngongba II": 0,
+  // McNeese (eliminated R1, Vanderbilt 78-68)
+  "Larry Johnson": 15,
+  // Saint Mary's (eliminated R1, Texas A&M 63-50)
+  "Mikey Lewis": 0, "Joshua Dent": 18, "Paulius Murauskas": 4,
+};
 // Game IDs that are scheduled for future dates - never fetch box scores for these
 // These will be removed as games are played
 const BLOCKED_GAME_IDS = new Set([]);
@@ -497,9 +518,13 @@ function img(id) {
   return `https://wsrv.nl/?url=https%3A%2F%2Fa.espncdn.com%2Fcombiner%2Fi%3Fimg%3D%2Fi%2Fheadshots%2Fmens-college-basketball%2Fplayers%2Ffull%2F${id}.png%26w%3D64%26h%3D64%26scale%3Dcrop&w=64&h=64&fit=cover&mask=circle&output=png`;
 }
 function ini(n) { return n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join(''); }
-function avt(p, sz=34) {
+function avt(p, sz=34, showX=false) {
   const u = img(p.id);
-  return `<div class="av" style="width:${sz}px;height:${sz}px">${u?`<img src="${u}" loading="lazy" onerror="this.style.display='none'"/>`:''}${!u?ini(p.n):''}</div>`;
+  const initials = ini(p.n);
+  const xOverlay = showX ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(180,0,0,0.65);font-size:${Math.round(sz*0.45)}px;font-weight:900;color:#fff;pointer-events:none;">✕</div>` : '';
+  const imgTag = u ? `<img src="${u}" loading="lazy" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>` : '';
+  const iniDiv = `<div style="display:${u?'none':'flex'};width:100%;height:100%;border-radius:50%;background:#334;align-items:center;justify-content:center;font-size:${Math.round(sz*0.38)}px;font-weight:700;color:#8af;">${initials}</div>`;
+  return `<div class="av" style="width:${sz}px;height:${sz}px;position:relative;flex-shrink:0;">${imgTag}${iniDiv}${xOverlay}</div>`;
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
@@ -534,8 +559,8 @@ function renderStandings() {
   let h = '<div class="sg">';
   s.forEach(({t,oi,pts},i) => {
     const thumbs = t.players.slice(0,10).map(p => {
-      const u = img(p.id);
-      return u ? `<div class="th"><img src="${u}" loading="lazy" onerror="this.style.display='none'"/></div>` : `<div class="th">${ini(p.n)}</div>`;
+      const elim = isEliminated(p);
+      return `<div class="th" style="opacity:${elim?0.45:1}">${avt(p, 30, elim)}</div>`;
     }).join('');
     const activePlayers = t.players.filter(p => !isEliminated(p)).length;
     const totalPlayers = t.players.length;
@@ -582,10 +607,15 @@ function showTeam(oi) {
       if (v === 0) return `<td style="${tdStyle};color:#e05c5c;font-weight:600">0</td>`;
       return `<td style="${tdStyle}">${v}</td>`;
     }).join('');
-    h += `<tr style="${elim?'opacity:0.4':''}">
+    h += `<tr style="${elim?'opacity:0.5':''}">
       <td style="padding:6px 8px">
-        <div class="pn">${p.n}${elim?' ✕':''}</div>
-        <div class="ps">${p.s}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${avt(p, 32, elim)}
+          <div>
+            <div class="pn">${p.n}</div>
+            <div class="ps">${p.s}</div>
+          </div>
+        </div>
       </td>
       ${colCells}
       <td style="${tdPtsStyle}">${pts}</td>
@@ -632,10 +662,15 @@ function renderPlayers() {
       if (v === 0) return `<td style="${tdS};color:#e05c5c;font-weight:600">0</td>`;
       return `<td style="${tdS}">${v}</td>`;
     }).join('');
-    h += `<tr class="pr" style="${elim?'opacity:0.4':''}" data-q="${p.n.toLowerCase()} ${p.s.toLowerCase()} ${owner.toLowerCase()}">
+    h += `<tr class="pr" style="${elim?'opacity:0.5':''}" data-q="${p.n.toLowerCase()} ${p.s.toLowerCase()} ${owner.toLowerCase()}">
       <td style="padding:6px 8px">
-        <div class="pn">${p.n}${elim?' ✕':''}</div>
-        <div class="ps">${p.s}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${avt(p, 30, elim)}
+          <div>
+            <div class="pn">${p.n}</div>
+            <div class="ps">${p.s}</div>
+          </div>
+        </div>
       </td>
       <td style="padding:6px 8px"><span class="pi">${owner}</span></td>
       ${colCells}
