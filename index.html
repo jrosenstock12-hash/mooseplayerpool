@@ -221,7 +221,9 @@ const HARDCODED_PTS = { "Quentin Copeland": 16, "Boopie Miller": 15, "Jaron Pier
 const BLOCKED_GAME_IDS = new Set([]);
 // Hardcoded eliminations for First Four losers (not in ESPN tournament data)
 const HARDCODED_ELIM = ["NC State", "SMU", "South Florida", "Wisconsin", "Ohio State", "Troy", "Saint Mary's"];
-// NCAA Tournament round dates
+// NCAA Tournament rounds in order — index 0 = R1, index 1 = R2, etc.
+// First Four counts as R1 for those players; everyone else starts at R1 = Round of 64
+const ROUND_ORDER = ['First Four','Round of 64','Round of 32','Sweet 16','Elite Eight','Final Four','Championship'];
 const ROUND_DATES = {
   'First Four':    ['2026-03-18','2026-03-19'],
   'Round of 64':   ['2026-03-20','2026-03-21'],
@@ -236,7 +238,21 @@ function getRoundForDate(dateStr) {
   for (const [round, dates] of Object.entries(ROUND_DATES)) {
     if (dates.includes(d)) return round;
   }
-  return 'Tournament';
+  return null;
+}
+// Get a player's pts indexed by R1-R6 (chronological games played)
+function getPlayerRoundCols(p) {
+  if (HARDCODED_PTS[p.n] !== undefined) {
+    // Hardcoded — just show total in R1, no breakdown
+    return [HARDCODED_PTS[p.n], null, null, null, null, null];
+  }
+  const rounds = roundPts[p.n] || {};
+  // Get all rounds this player scored in, sorted chronologically
+  const played = ROUND_ORDER.filter(r => rounds[r] > 0);
+  // Map to R1-R6 columns
+  const cols = [null,null,null,null,null,null];
+  played.forEach((r, i) => { if (i < 6) cols[i] = rounds[r]; });
+  return cols;
 }
 // All tournament dates to fetch
 const TOURNEY_DATES = ['2026-03-19','2026-03-20','2026-03-21','2026-03-22','2026-03-23','2026-03-26','2026-03-27','2026-03-28','2026-03-29','2026-04-04','2026-04-06'];
@@ -451,14 +467,7 @@ function getPlayerPts(p) {
   if (HARDCODED_PTS[p.n] !== undefined) return HARDCODED_PTS[p.n];
   return livePts[p.n] || 0;
 }
-function getPlayerRounds(p) {
-  // Returns array of {round, pts} for rounds where player scored
-  if (HARDCODED_PTS[p.n] !== undefined) return []; // hardcoded - no round breakdown available
-  const rounds = roundPts[p.n] || {};
-  return Object.entries(ROUND_DATES)
-    .filter(([round]) => rounds[round])
-    .map(([round]) => ({ round, pts: rounds[round] }));
-}
+
 function teamTotal(t) { return t.players.reduce((s,p) => s + getPlayerPts(p), 0); }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -526,50 +535,70 @@ function showTeam(oi) {
   curTeam = oi;
   const t = TEAMS[oi];
   const ps = t.players.slice().sort((a,b)=>getPlayerPts(b)-getPlayerPts(a));
+  const thStyle = 'font-family:"DM Mono",monospace;font-size:11px;font-weight:500;color:var(--mu);text-align:right;padding:6px 8px;width:36px';
+  const tdStyle = 'font-family:"DM Mono",monospace;font-size:13px;text-align:right;padding:6px 8px;color:var(--mu)';
+  const tdPtsStyle = 'font-family:"DM Mono",monospace;font-size:15px;font-weight:500;text-align:right;padding:6px 8px;color:var(--ac)';
   let h = `<button class="back" onclick="curTeam=null;renderStandings()">← Back</button>
   <div style="font-family:'Bebas Neue',sans-serif;font-size:42px">${t.name}</div>
   <div style="font-size:14px;color:var(--mu);margin:4px 0 1.5rem">${teamTotal(t)} pts · ${t.players.length} players</div>
-  <table><thead><tr><th>Player</th><th>School</th><th class="r">Total</th></tr></thead><tbody>`;
+  <div style="overflow-x:auto">
+  <table style="min-width:520px"><thead><tr>
+    <th style="text-align:left;padding:6px 8px">Player</th>
+    <th style="${thStyle}">R1</th>
+    <th style="${thStyle}">R2</th>
+    <th style="${thStyle}">R3</th>
+    <th style="${thStyle}">R4</th>
+    <th style="${thStyle}">R5</th>
+    <th style="${thStyle}">R6</th>
+    <th style="${thStyle}">TOT</th>
+  </tr></thead><tbody>`;
   ps.forEach(p => {
     const pts = getPlayerPts(p);
     const elim = isEliminated(p);
-    const rounds = getPlayerRounds(p);
-    const roundStr = rounds.length > 0
-      ? rounds.map(r => `<span style="font-size:11px;color:var(--mu);margin-right:8px">${r.round}: ${r.pts}</span>`).join('')
-      : (HARDCODED_PTS[p.n] !== undefined ? '' : '');
+    const cols = getPlayerRoundCols(p);
+    const colCells = cols.map(v => `<td style="${tdStyle}">${v !== null ? v : '–'}</td>`).join('');
     h += `<tr style="${elim?'opacity:0.4':''}">
-      <td>
+      <td style="padding:6px 8px">
         <div class="pn">${p.n}${elim?' ✕':''}</div>
-        ${roundStr ? `<div style="margin-top:3px">${roundStr}</div>` : ''}
+        <div class="ps">${p.s}</div>
       </td>
-      <td><div class="ps">${p.s}</div></td>
-      <td class="pt">${pts}</td>
+      ${colCells}
+      <td style="${tdPtsStyle}">${pts}</td>
     </tr>`;
   });
-  document.getElementById('tab-standings').innerHTML = h + '</tbody></table>';
+  document.getElementById('tab-standings').innerHTML = h + '</tbody></table></div>';
 }
 
 function renderPlayers() {
   const all = [];
   TEAMS.forEach(t => t.players.forEach(p => all.push({p,owner:t.name,pts:getPlayerPts(p)})));
   all.sort((a,b)=>b.pts-a.pts);
+  const thS = 'font-family:"DM Mono",monospace;font-size:11px;font-weight:500;color:var(--mu);text-align:right;padding:6px 8px;width:36px';
+  const tdS = 'font-family:"DM Mono",monospace;font-size:13px;text-align:right;padding:6px 8px;color:var(--mu)';
+  const tdPS = 'font-family:"DM Mono",monospace;font-size:15px;font-weight:500;text-align:right;padding:6px 8px;color:var(--ac)';
   let h = `<div class="sb"><input type="text" id="psrch" placeholder="Search player, school, or owner..." oninput="filterP()"/></div>
-  <table><thead><tr><th>Player</th><th>Owner</th><th class="r">Pts</th></tr></thead><tbody>`;
+  <div style="overflow-x:auto"><table style="min-width:560px"><thead><tr>
+    <th style="text-align:left;padding:6px 8px">Player</th>
+    <th style="text-align:left;padding:6px 8px">Owner</th>
+    <th style="${thS}">R1</th><th style="${thS}">R2</th><th style="${thS}">R3</th>
+    <th style="${thS}">R4</th><th style="${thS}">R5</th><th style="${thS}">R6</th>
+    <th style="${thS}">TOT</th>
+  </tr></thead><tbody>`;
   all.forEach(({p,owner,pts}) => {
     const elim = isEliminated(p);
-    const rounds = getPlayerRounds(p);
-    const roundStr = rounds.map(r => `<span style="font-size:11px;color:var(--mu);margin-right:6px">${r.round}: ${r.pts}</span>`).join('');
+    const cols = getPlayerRoundCols(p);
+    const colCells = cols.map(v => `<td style="${tdS}">${v !== null ? v : '–'}</td>`).join('');
     h += `<tr class="pr" style="${elim?'opacity:0.4':''}" data-q="${p.n.toLowerCase()} ${p.s.toLowerCase()} ${owner.toLowerCase()}">
-      <td>
+      <td style="padding:6px 8px">
         <div class="pn">${p.n}${elim?' ✕':''}</div>
         <div class="ps">${p.s}</div>
-        ${roundStr ? `<div style="margin-top:2px">${roundStr}</div>` : ''}
       </td>
-      <td><span class="pi">${owner}</span></td>
-      <td class="pt">${pts}</td>
+      <td style="padding:6px 8px"><span class="pi">${owner}</span></td>
+      ${colCells}
+      <td style="${tdPS}">${pts}</td>
     </tr>`;
   });
-  document.getElementById('tab-players').innerHTML = h + '</tbody></table>';
+  document.getElementById('tab-players').innerHTML = h + '</tbody></table></div>';
 }
 function filterP() {
   const q = (document.getElementById('psrch')?.value||'').toLowerCase();
