@@ -397,11 +397,13 @@ async function fetchAll() {
               if (!espnName) return;
               const stats = athlete.stats || [];
               if (!stats.length) return;
+              const isFinal = gameStatus === 'STATUS_FINAL';
+              // For non-final games, skip rows where ALL stats are empty/zero (pre-game placeholders)
+              if (!isFinal && stats.every(s => s === '0' || s === '-' || s === '--' || s === '')) return;
               // MIN is always index 0
               const minStr = stats[0] || '';
               const minVal = parseFloat(minStr);
               const didPlay = minStr && minStr !== '-' && minStr !== '--' && minStr !== '0' && minVal > 0;
-              const isFinal = gameStatus === 'STATUS_FINAL';
 
               // If game is not final, skip players with no minutes (game not started yet)
               if (!isFinal && !didPlay) return;
