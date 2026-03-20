@@ -571,6 +571,21 @@ function showTeam(oi) {
       <td style="${tdPtsStyle}">${pts}</td>
     </tr>`;
   });
+  // Totals row
+  const tfStyle = 'font-family:"DM Mono",monospace;font-size:13px;font-weight:600;text-align:right;padding:8px 8px;border-top:2px solid var(--bd2);color:var(--tx)';
+  const tfPtsStyle = 'font-family:"DM Mono",monospace;font-size:15px;font-weight:700;text-align:right;padding:8px 8px;border-top:2px solid var(--bd2);color:var(--ac)';
+  const roundTotals = [0,0,0,0,0,0];
+  ps.forEach(p => {
+    const cols = getPlayerRoundCols(p);
+    cols.forEach((v,i) => { if (v !== null) roundTotals[i] += v; });
+  });
+  const grandTotal = teamTotal(t);
+  const totalCells = roundTotals.map(v => `<td style="${tfStyle}">${v > 0 ? v : '–'}</td>`).join('');
+  h += `<tr>
+    <td style="padding:8px 8px;border-top:2px solid var(--bd2);font-weight:600">TEAM TOTAL</td>
+    ${totalCells}
+    <td style="${tfPtsStyle}">${grandTotal}</td>
+  </tr>`;
   document.getElementById('tab-standings').innerHTML = h + '</tbody></table></div>';
 }
 
