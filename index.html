@@ -215,7 +215,7 @@ function matchPlayer(espnName) {
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 // Hardcoded First Four points (these never change)
-const HARDCODED_PTS = { "Quentin Copeland": 16, "Boopie Miller": 15, "Jaron Pierre Jr.": 18, "Isaiah Nelson": 22, "Alex Rapp": 12, "Nick Boyd": 27, "John Blackwell": 22, "Nolan Winter": 8, "Amare Bynum": 12, "John Mobley Jr.": 15, "Bruce Thornton": 10, "Devin Royal": 14, "Wes Enis": 4, "Daniel Punch": 16, "Matas Vokietaitis": 23, "Kur Teng": 3, "Kanon Catchings": 0, "Jeremiah Wilkinson": 30 };
+const HARDCODED_PTS = { "Quentin Copeland": 16, "Boopie Miller": 15, "Jaron Pierre Jr.": 18, "Isaiah Nelson": 22, "Alex Rapp": 12, "Nick Boyd": 27, "John Blackwell": 22, "Nolan Winter": 8, "Amare Bynum": 12, "John Mobley Jr.": 15, "Bruce Thornton": 10, "Devin Royal": 14, "Wes Enis": 4, "Daniel Punch": 16, "Matas Vokietaitis": 23, "Kur Teng": 3, "Kanon Catchings": 0, "Jeremiah Wilkinson": 30, "Mikel Brown Jr.": 0 };
 // Game IDs that are scheduled for future dates - never fetch box scores for these
 // These will be removed as games are played
 const BLOCKED_GAME_IDS = new Set([]);
@@ -248,8 +248,8 @@ function getPlayerRoundCols(p) {
   }
   const rounds = roundPts[p.n] || {};
   // Get all rounds this player scored in, sorted chronologically
-  const played = ROUND_ORDER.filter(r => rounds[r] > 0);
-  // Map to R1-R6 columns
+  const played = ROUND_ORDER.filter(r => rounds[r] !== undefined);
+  // Map to R1-R6 columns — null=didn't play, 0=played scored 0, N=scored N
   const cols = [null,null,null,null,null,null];
   played.forEach((r, i) => { if (i < 6) cols[i] = rounds[r]; });
   return cols;
@@ -450,7 +450,9 @@ async function fetchAll() {
     Object.entries(newRoundPts).forEach(([name, rounds]) => {
       if (!maxRoundPts[name]) maxRoundPts[name] = {};
       Object.entries(rounds).forEach(([round, pts]) => {
-        if (pts > (maxRoundPts[name][round] || 0)) maxRoundPts[name][round] = pts;
+        // Preserve explicit 0 — means player played but scored nothing
+        const cur = maxRoundPts[name][round];
+        if (cur === undefined || pts > cur) maxRoundPts[name][round] = pts;
       });
     });
     // Merge: take max of new fetch and high water mark
