@@ -226,7 +226,7 @@ const HARDCODED_ELIM = ["NC State", "SMU", "South Florida", "Wisconsin", "Ohio S
 const ROUND_ORDER = ['First Four','Round of 64','Round of 32','Sweet 16','Elite Eight','Final Four','Championship'];
 const ROUND_DATES = {
   'First Four':    ['2026-03-18','2026-03-19'],
-  'Round of 64':   ['2026-03-20','2026-03-21'],
+  'Round of 64':   ['2026-03-19','2026-03-20','2026-03-21'],
   'Round of 32':   ['2026-03-22','2026-03-23'],
   'Sweet 16':      ['2026-03-26','2026-03-27'],
   'Elite Eight':   ['2026-03-28','2026-03-29'],
@@ -343,8 +343,12 @@ async function fetchAll() {
     });
 
     // Step 3: fetch box scores ONLY for NCAA tournament games (3/19/26 or later) that have started/finished
-    const newPts = {};
-    const newRoundPts = {}; // { playerName: { roundName: pts } }
+    // Seed from persisted — so old rounds are never lost even if ESPN stops serving them
+    const newPts = { ...persistedPts };
+    const newRoundPts = {};
+    Object.entries(persistedRoundPts).forEach(([name, rounds]) => {
+      newRoundPts[name] = { ...rounds };
+    });
     const boxScoreGames = tourneyGames
       .filter(g => {
         const st = g.status?.type?.name;
