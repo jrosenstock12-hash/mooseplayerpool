@@ -218,13 +218,33 @@ function matchPlayer(espnName) {
 const HARDCODED_PTS = { "Quentin Copeland": 16, "Boopie Miller": 15, "Jaron Pierre Jr.": 18, "Isaiah Nelson": 22, "Alex Rapp": 12, "Nick Boyd": 27, "John Blackwell": 22, "Nolan Winter": 8, "Amare Bynum": 12, "John Mobley Jr.": 15, "Bruce Thornton": 10, "Devin Royal": 14, "Wes Enis": 4, "Daniel Punch": 16, "Matas Vokietaitis": 23, "Kur Teng": 3 };
 // Game IDs that are scheduled for future dates - never fetch box scores for these
 // These will be removed as games are played
-const BLOCKED_GAME_IDS = new Set([
-  '401856520', // TTU vs AKR - Fri 3/20
-]);
+const BLOCKED_GAME_IDS = new Set([]);
 // Hardcoded eliminations for First Four losers (not in ESPN tournament data)
 const HARDCODED_ELIM = ["NC State", "SMU", "South Florida", "Wisconsin", "Ohio State", "Troy", "Saint Mary's"];
-let livePts = {};
-let persistedPts = {}; // never shrinks — preserves eliminated players' points
+// NCAA Tournament round dates
+const ROUND_DATES = {
+  'First Four':    ['2026-03-18','2026-03-19'],
+  'Round of 64':   ['2026-03-20','2026-03-21'],
+  'Round of 32':   ['2026-03-22','2026-03-23'],
+  'Sweet 16':      ['2026-03-26','2026-03-27'],
+  'Elite Eight':   ['2026-03-28','2026-03-29'],
+  'Final Four':    ['2026-04-04'],
+  'Championship':  ['2026-04-06'],
+};
+function getRoundForDate(dateStr) {
+  const d = dateStr ? dateStr.substring(0,10) : '';
+  for (const [round, dates] of Object.entries(ROUND_DATES)) {
+    if (dates.includes(d)) return round;
+  }
+  return 'Tournament';
+}
+// All tournament dates to fetch
+const TOURNEY_DATES = ['2026-03-19','2026-03-20','2026-03-21','2026-03-22','2026-03-23','2026-03-26','2026-03-27','2026-03-28','2026-03-29','2026-04-04','2026-04-06'];
+
+let livePts = {};        // cumulative pts per player name
+let roundPts = {};       // pts per player per round: { playerName: { 'Round of 64': 12, ... } }
+let persistedPts = {};   // never shrinks — preserves eliminated players' points
+let persistedRoundPts = {}; // same but per round
 let liveGames = [];
 let elimIds = new Set();
 let elimSchools = new Set();
@@ -250,25 +270,31 @@ function isEliminated(p) {
 // ── ESPN FETCH ────────────────────────────────────────────────────────────────
 async function fetchAll() {
   try {
-    // Step 1: get scoreboard - CONFIRMED WORKING URL from test
-    const sbUrl = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?groups=100&seasontype=3&limit=100&_=${Date.now()}`;
-    const sbRes = await fetch(sbUrl);
-    if (!sbRes.ok) throw new Error('Scoreboard ' + sbRes.status);
-    const sbData = await sbRes.json();
-    const events = sbData.events || [];
+    // Step 1: fetch scoreboard for all tournament dates
+    const today = new Date().toISOString().substring(0,10).replace(/-/g,'');
+    const allEvents = [];
+    await Promise.all(TOURNEY_DATES.map(async d => {
+      const dateParam = d.replace(/-/g,'');
+      const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?groups=100&seasontype=3&limit=100&dates=${dateParam}&_=${Date.now()}`;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+        (data.events || []).forEach(e => { e._fetchDate = d; allEvents.push(e); });
+      } catch(e) {}
+    }));
 
-    // Keep all events for display purposes (scores tab)
-    const tourneyGames = events.filter(g => {
+    const isTourney = g => {
       const notes = g.notes || [];
       const name = (g.name || '').toLowerCase();
       const season = g.season?.slug || '';
       return notes.some(n => (n.headline||'').toLowerCase().includes('championship') || (n.headline||'').toLowerCase().includes('ncaa')) ||
-             name.includes('ncaa') ||
-             season.includes('tournament') ||
+             name.includes('ncaa') || season.includes('tournament') ||
              (g.competitions||[]).some(c => (c.notes||[]).some(n => (n.headline||'').toLowerCase().includes('championship'))) ||
              (g.competitions||[]).some(c => (c.competitors||[]).some(t => t.curatedRank?.current > 0 || t.seed));
-    });
-    liveGames = tourneyGames.length > 0 ? tourneyGames : events;
+    };
+    const tourneyGames = allEvents.filter(isTourney);
+    liveGames = tourneyGames.length > 0 ? tourneyGames : allEvents;
 
     // Step 2: track eliminations from FINAL games only (NCAA tourney only - 3/19/26+)
     const activeIds = [];
@@ -302,22 +328,27 @@ async function fetchAll() {
 
     // Step 3: fetch box scores ONLY for NCAA tournament games (3/19/26 or later) that have started/finished
     const newPts = {};
-    const boxScoreIds = tourneyGames
+    const newRoundPts = {}; // { playerName: { roundName: pts } }
+    const boxScoreGames = tourneyGames
       .filter(g => {
         const st = g.status?.type?.name;
         const stateType = g.status?.type?.state;
-        // Must be in-progress, halftime, or final
         if (st !== 'STATUS_IN_PROGRESS' && st !== 'STATUS_HALFTIME' && st !== 'STATUS_FINAL' && stateType !== 'in') return false;
-        // CRITICAL: skip any game that started before March 19 2026 (conference tournaments etc)
-        const dateStr = g.date || g.competitions?.[0]?.date || '';
-        const datePart = dateStr.substring(0, 10); // "2026-03-19"
+        const dateStr = g._fetchDate || g.date || g.competitions?.[0]?.date || '';
+        const datePart = dateStr.substring(0, 10);
         if (datePart && datePart < '2026-03-19') return false;
         return true;
       })
-      .filter(g => !BLOCKED_GAME_IDS.has(g.id))
-      .map(g => g.id);
+      .filter(g => !BLOCKED_GAME_IDS.has(g.id));
+    const boxScoreIds = boxScoreGames.map(g => g.id);
+    const gameRoundMap = {}; // gameId -> round name
+    boxScoreGames.forEach(g => {
+      const dateStr = g._fetchDate || g.date || g.competitions?.[0]?.date || '';
+      gameRoundMap[g.id] = getRoundForDate(dateStr);
+    });
 
     await Promise.all(boxScoreIds.map(async id => {
+      const round = gameRoundMap[id] || 'Tournament';
       try {
         const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary?event=${id}&_=${Date.now()}`;
         const res = await fetch(url);
@@ -360,6 +391,8 @@ async function fetchAll() {
               const player = matchPlayer(espnName);
               if (player) {
                 newPts[player.n] = (newPts[player.n] || 0) + pts;
+                if (!newRoundPts[player.n]) newRoundPts[player.n] = {};
+                newRoundPts[player.n][round] = (newRoundPts[player.n][round] || 0) + pts;
                 if (pts > 0) foundAny = true;
               }
             });
@@ -383,18 +416,30 @@ async function fetchAll() {
           });
           Object.entries(playerTotals).forEach(([name, pts]) => {
             const player = matchPlayer(name);
-            if (player && pts > 0) newPts[player.n] = (newPts[player.n] || 0) + pts;
+            if (player && pts > 0) {
+              newPts[player.n] = (newPts[player.n] || 0) + pts;
+              if (!newRoundPts[player.n]) newRoundPts[player.n] = {};
+              newRoundPts[player.n][round] = (newRoundPts[player.n][round] || 0) + pts;
+            }
           });
         }
 
       } catch(e) { /* silent fail per game */ }
     }));
 
-    // Merge into persistedPts — never shrink a player's total (preserves eliminated players' scores)
+    // Merge into persistedPts — never shrink (preserves eliminated players' scores)
     Object.entries(newPts).forEach(([name, pts]) => {
       if (pts > (persistedPts[name] || 0)) persistedPts[name] = pts;
     });
+    // Merge per-round pts
+    Object.entries(newRoundPts).forEach(([name, rounds]) => {
+      if (!persistedRoundPts[name]) persistedRoundPts[name] = {};
+      Object.entries(rounds).forEach(([round, pts]) => {
+        if (pts > (persistedRoundPts[name][round] || 0)) persistedRoundPts[name][round] = pts;
+      });
+    });
     livePts = { ...persistedPts };
+    roundPts = { ...persistedRoundPts };
     document.getElementById('lupd').textContent = 'Updated ' + new Date().toLocaleTimeString();
   } catch(e) {
     document.getElementById('lupd').textContent = 'Error: ' + e.message;
@@ -403,9 +448,16 @@ async function fetchAll() {
 }
 
 function getPlayerPts(p) {
-  // If player has hardcoded pts, use ONLY that (prevents doubling with live feed)
   if (HARDCODED_PTS[p.n] !== undefined) return HARDCODED_PTS[p.n];
   return livePts[p.n] || 0;
+}
+function getPlayerRounds(p) {
+  // Returns array of {round, pts} for rounds where player scored
+  if (HARDCODED_PTS[p.n] !== undefined) return []; // hardcoded - no round breakdown available
+  const rounds = roundPts[p.n] || {};
+  return Object.entries(ROUND_DATES)
+    .filter(([round]) => rounds[round])
+    .map(([round]) => ({ round, pts: rounds[round] }));
 }
 function teamTotal(t) { return t.players.reduce((s,p) => s + getPlayerPts(p), 0); }
 
@@ -477,11 +529,22 @@ function showTeam(oi) {
   let h = `<button class="back" onclick="curTeam=null;renderStandings()">← Back</button>
   <div style="font-family:'Bebas Neue',sans-serif;font-size:42px">${t.name}</div>
   <div style="font-size:14px;color:var(--mu);margin:4px 0 1.5rem">${teamTotal(t)} pts · ${t.players.length} players</div>
-  <table><thead><tr><th>Player</th><th>School</th><th class="r">Pts</th></tr></thead><tbody>`;
+  <table><thead><tr><th>Player</th><th>School</th><th class="r">Total</th></tr></thead><tbody>`;
   ps.forEach(p => {
     const pts = getPlayerPts(p);
     const elim = isEliminated(p);
-    h += `<tr style="${elim?'opacity:0.4':''}"><td><div class="pn">${p.n}${elim?' ✕':''}</div></td><td><div class="ps">${p.s}</div></td><td class="pt">${pts}</td></tr>`;
+    const rounds = getPlayerRounds(p);
+    const roundStr = rounds.length > 0
+      ? rounds.map(r => `<span style="font-size:11px;color:var(--mu);margin-right:8px">${r.round}: ${r.pts}</span>`).join('')
+      : (HARDCODED_PTS[p.n] !== undefined ? '' : '');
+    h += `<tr style="${elim?'opacity:0.4':''}">
+      <td>
+        <div class="pn">${p.n}${elim?' ✕':''}</div>
+        ${roundStr ? `<div style="margin-top:3px">${roundStr}</div>` : ''}
+      </td>
+      <td><div class="ps">${p.s}</div></td>
+      <td class="pt">${pts}</td>
+    </tr>`;
   });
   document.getElementById('tab-standings').innerHTML = h + '</tbody></table>';
 }
@@ -494,7 +557,17 @@ function renderPlayers() {
   <table><thead><tr><th>Player</th><th>Owner</th><th class="r">Pts</th></tr></thead><tbody>`;
   all.forEach(({p,owner,pts}) => {
     const elim = isEliminated(p);
-    h += `<tr class="pr" style="${elim?'opacity:0.4':''}" data-q="${p.n.toLowerCase()} ${p.s.toLowerCase()} ${owner.toLowerCase()}"><td><div class="pn">${p.n}${elim?' ✕':''}</div><div class="ps">${p.s}</div></td><td><span class="pi">${owner}</span></td><td class="pt">${pts}</td></tr>`;
+    const rounds = getPlayerRounds(p);
+    const roundStr = rounds.map(r => `<span style="font-size:11px;color:var(--mu);margin-right:6px">${r.round}: ${r.pts}</span>`).join('');
+    h += `<tr class="pr" style="${elim?'opacity:0.4':''}" data-q="${p.n.toLowerCase()} ${p.s.toLowerCase()} ${owner.toLowerCase()}">
+      <td>
+        <div class="pn">${p.n}${elim?' ✕':''}</div>
+        <div class="ps">${p.s}</div>
+        ${roundStr ? `<div style="margin-top:2px">${roundStr}</div>` : ''}
+      </td>
+      <td><span class="pi">${owner}</span></td>
+      <td class="pt">${pts}</td>
+    </tr>`;
   });
   document.getElementById('tab-players').innerHTML = h + '</tbody></table>';
 }
