@@ -229,6 +229,7 @@ let liveGames = [];
 let elimIds = new Set();
 let elimSchools = new Set();
 let curTab = 'standings';
+let curTeam = null; // track if we're viewing a team detail
 
 function isEliminated(p) {
   const sl = p.s.toLowerCase().trim();
@@ -422,7 +423,10 @@ function avt(p, sz=34) {
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function renderAll() {
   renderTicker();
-  if (curTab==='standings') renderStandings();
+  if (curTab==='standings') {
+    if (curTeam !== null) showTeam(curTeam); // stay on team detail if viewing one
+    else renderStandings();
+  }
   else if (curTab==='players') renderPlayers();
   else if (curTab==='scores') renderScores();
   else renderDraft();
@@ -467,9 +471,10 @@ function renderStandings() {
 }
 
 function showTeam(oi) {
+  curTeam = oi;
   const t = TEAMS[oi];
   const ps = t.players.slice().sort((a,b)=>getPlayerPts(b)-getPlayerPts(a));
-  let h = `<button class="back" onclick="renderStandings()">← Back</button>
+  let h = `<button class="back" onclick="curTeam=null;renderStandings()">← Back</button>
   <div style="font-family:'Bebas Neue',sans-serif;font-size:42px">${t.name}</div>
   <div style="font-size:14px;color:var(--mu);margin:4px 0 1.5rem">${teamTotal(t)} pts · ${t.players.length} players</div>
   <table><thead><tr><th>Player</th><th>School</th><th class="r">Pts</th></tr></thead><tbody>`;
@@ -557,7 +562,7 @@ async function manualRefresh() {
 }
 renderAll();
 fetchAll();
-setInterval(fetchAll, 30000);
+setInterval(fetchAll, 60000);
 </script>
 </body>
 </html>
