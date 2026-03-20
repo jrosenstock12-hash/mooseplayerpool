@@ -644,6 +644,24 @@ function renderScores() {
     else if (st==='STATUS_IN_PROGRESS' || st==='STATUS_HALFTIME' || state==='in') live.push(g);
     else up.push(g);
   });
+
+  // Sort upcoming: earliest date/time first, TBD last
+  up.sort((a, b) => {
+    const da = a.date || a.competitions?.[0]?.date || '';
+    const db = b.date || b.competitions?.[0]?.date || '';
+    if (!da && !db) return 0;
+    if (!da) return 1;  // TBD goes last
+    if (!db) return -1;
+    return da < db ? -1 : da > db ? 1 : 0;
+  });
+
+  // Sort finals: most recent first
+  fin.sort((a, b) => {
+    const da = a.date || a.competitions?.[0]?.date || '';
+    const db = b.date || b.competitions?.[0]?.date || '';
+    return da > db ? -1 : da < db ? 1 : 0;
+  });
+
   function gh(g) {
     const c = g.competitions?.[0]; if(!c) return '';
     const teams = c.competitors||[];
@@ -661,8 +679,8 @@ function renderScores() {
   }
   let h='';
   if(live.length) h+=`<div class="sl">Live Now</div><div class="scg">${live.map(gh).join('')}</div>`;
-  if(fin.length) h+=`<div class="sl">Final</div><div class="scg">${fin.map(gh).join('')}</div>`;
   if(up.length) h+=`<div class="sl">Upcoming</div><div class="scg">${up.map(gh).join('')}</div>`;
+  if(fin.length) h+=`<div class="sl">Final</div><div class="scg">${fin.map(gh).join('')}</div>`;
   document.getElementById('tab-scores').innerHTML = h;
 }
 
