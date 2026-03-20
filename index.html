@@ -687,10 +687,10 @@ function renderScores() {
 function renderDraft() {
   let h='<div class="dg">';
   TEAMS.forEach(t => {
-    h+=`<div class="dc"><div class="dch"><div class="dco">${t.name}</div><div class="dct">${teamTotal(t)} pts</div></div>`;
+    h+=`<div class="dc"><div class="dch"><div class="dco">${t.name}</div></div>`;
     t.players.forEach((p,i)=>{
       const pts=getPlayerPts(p);
-      h+=`<div class="dp"><span class="dn">${i+1}</span><div><div class="dna">${p.n}</div><div class="dsc">${p.s}</div></div><span class="dpt">${pts}</span></div>`;
+      h+=`<div class="dp"><span class="dn">${i+1}</span><div><div class="dna">${p.n}</div><div class="dsc">${p.s}</div></div></div>`;
     });
     h+='</div>';
   });
