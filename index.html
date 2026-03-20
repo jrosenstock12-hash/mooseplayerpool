@@ -558,10 +558,6 @@ function renderStandings() {
   const mx = Math.max(...s.map(x=>x.pts),1);
   let h = '<div class="sg">';
   s.forEach(({t,oi,pts},i) => {
-    const thumbs = t.players.slice(0,10).map(p => {
-      const elim = isEliminated(p);
-      return `<div class="th" style="opacity:${elim?0.45:1}">${avt(p, 30, elim)}</div>`;
-    }).join('');
     const activePlayers = t.players.filter(p => !isEliminated(p)).length;
     const totalPlayers = t.players.length;
     const playerLabel = activePlayers === totalPlayers
@@ -570,7 +566,6 @@ function renderStandings() {
     h += `<div class="sr ${i<3?'r'+(i+1):''}" onclick="showTeam(${oi})">
       <div class="rn">${i+1}</div>
       <div><div class="sn">${t.name}</div><div class="sm">${playerLabel}</div><div class="bw"><div class="bf" style="width:${Math.round(pts/mx*100)}%"></div></div></div>
-      <div class="ths">${thumbs}</div>
       <div style="text-align:right"><div class="pb">${pts}</div><div class="plbl">pts</div></div>
     </div>`;
   });
