@@ -215,12 +215,12 @@ function matchPlayer(espnName) {
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 // Hardcoded First Four points (these never change)
-const HARDCODED_PTS = { "Quentin Copeland": 16, "Boopie Miller": 15, "Jaron Pierre Jr.": 18, "Isaiah Nelson": 22, "Alex Rapp": 12, "Nick Boyd": 27, "John Blackwell": 22, "Nolan Winter": 8, "Amare Bynum": 12, "John Mobley Jr.": 15, "Bruce Thornton": 10, "Devin Royal": 14, "Wes Enis": 4, "Daniel Punch": 16, "Matas Vokietaitis": 23, "Kur Teng": 3 };
+const HARDCODED_PTS = { "Quentin Copeland": 16, "Boopie Miller": 15, "Jaron Pierre Jr.": 18, "Isaiah Nelson": 22, "Alex Rapp": 12, "Nick Boyd": 27, "John Blackwell": 22, "Nolan Winter": 8, "Amare Bynum": 12, "John Mobley Jr.": 15, "Bruce Thornton": 10, "Devin Royal": 14, "Wes Enis": 4, "Daniel Punch": 16, "Matas Vokietaitis": 23, "Kur Teng": 3, "Kanon Catchings": 0, "Jeremiah Wilkinson": 30 };
 // Game IDs that are scheduled for future dates - never fetch box scores for these
 // These will be removed as games are played
 const BLOCKED_GAME_IDS = new Set([]);
 // Hardcoded eliminations for First Four losers (not in ESPN tournament data)
-const HARDCODED_ELIM = ["NC State", "SMU", "South Florida", "Wisconsin", "Ohio State", "Troy", "Saint Mary's"];
+const HARDCODED_ELIM = ["NC State", "SMU", "South Florida", "Wisconsin", "Ohio State", "Troy", "Saint Mary's", "Georgia", "North Carolina"];
 // NCAA Tournament rounds in order — index 0 = R1, index 1 = R2, etc.
 // First Four counts as R1 for those players; everyone else starts at R1 = Round of 64
 const ROUND_ORDER = ['First Four','Round of 64','Round of 32','Sweet 16','Elite Eight','Final Four','Championship'];
@@ -544,13 +544,13 @@ function showTeam(oi) {
   <div style="overflow-x:auto">
   <table style="min-width:520px"><thead><tr>
     <th style="text-align:left;padding:6px 8px">Player</th>
-    <th style="${thStyle}">TOT</th>
     <th style="${thStyle}">R1</th>
     <th style="${thStyle}">R2</th>
     <th style="${thStyle}">R3</th>
     <th style="${thStyle}">R4</th>
     <th style="${thStyle}">R5</th>
     <th style="${thStyle}">R6</th>
+    <th style="${thStyle}">TOT</th>
   </tr></thead><tbody>`;
   ps.forEach(p => {
     const pts = getPlayerPts(p);
@@ -566,8 +566,8 @@ function showTeam(oi) {
         <div class="pn">${p.n}${elim?' ✕':''}</div>
         <div class="ps">${p.s}</div>
       </td>
-      <td style="${tdPtsStyle}">${pts}</td>
       ${colCells}
+      <td style="${tdPtsStyle}">${pts}</td>
     </tr>`;
   });
   document.getElementById('tab-standings').innerHTML = h + '</tbody></table></div>';
@@ -584,9 +584,9 @@ function renderPlayers() {
   <div style="overflow-x:auto"><table style="min-width:560px"><thead><tr>
     <th style="text-align:left;padding:6px 8px">Player</th>
     <th style="text-align:left;padding:6px 8px">Owner</th>
-    <th style="${thS}">TOT</th>
     <th style="${thS}">R1</th><th style="${thS}">R2</th><th style="${thS}">R3</th>
     <th style="${thS}">R4</th><th style="${thS}">R5</th><th style="${thS}">R6</th>
+    <th style="${thS}">TOT</th>
   </tr></thead><tbody>`;
   all.forEach(({p,owner,pts}) => {
     const elim = isEliminated(p);
@@ -602,8 +602,8 @@ function renderPlayers() {
         <div class="ps">${p.s}</div>
       </td>
       <td style="padding:6px 8px"><span class="pi">${owner}</span></td>
-      <td style="${tdPS}">${pts}</td>
       ${colCells}
+      <td style="${tdPS}">${pts}</td>
     </tr>`;
   });
   document.getElementById('tab-players').innerHTML = h + '</tbody></table></div>';
