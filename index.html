@@ -541,6 +541,7 @@ function renderAll() {
 
 function showTab(tab) {
   curTab = tab;
+  if (tab === 'standings') curTeam = null;
   document.querySelectorAll('.tp').forEach(p => p.classList.remove('on'));
   document.getElementById('tab-'+tab).classList.add('on');
   document.querySelectorAll('.tb').forEach((b,i) => b.classList.toggle('on', ['standings','players','scores','draft'][i]===tab));
