@@ -215,7 +215,7 @@ function matchPlayer(espnName) {
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 // Hardcoded First Four points (these never change)
-const HARDCODED_PTS = { "Quentin Copeland": 16, "Boopie Miller": 15, "Jaron Pierre Jr.": 18, "Isaiah Nelson": 23, "Alex Rapp": 12, "Nick Boyd": 27, "John Blackwell": 22, "Nolan Winter": 8, "Amare Bynum": 12, "John Mobley Jr.": 15, "Bruce Thornton": 10, "Devin Royal": 14, "Wes Enis": 4, "Daniel Punch": 16, "Matas Vokietaitis": 23, "Kur Teng": 3 };
+const HARDCODED_PTS = { "Quentin Copeland": 16, "Boopie Miller": 15, "Jaron Pierre Jr.": 18, "Isaiah Nelson": 22, "Alex Rapp": 12, "Nick Boyd": 27, "John Blackwell": 22, "Nolan Winter": 8, "Amare Bynum": 12, "John Mobley Jr.": 15, "Bruce Thornton": 10, "Devin Royal": 14, "Wes Enis": 4, "Daniel Punch": 16, "Matas Vokietaitis": 23, "Kur Teng": 3 };
 // Game IDs that are scheduled for future dates - never fetch box scores for these
 // These will be removed as games are played
 const BLOCKED_GAME_IDS = new Set([
@@ -562,7 +562,7 @@ async function manualRefresh() {
 }
 renderAll();
 fetchAll();
-setInterval(fetchAll, 60000);
+setInterval(fetchAll, 30000);
 </script>
 </body>
 </html>
