@@ -544,26 +544,30 @@ function showTeam(oi) {
   <div style="overflow-x:auto">
   <table style="min-width:520px"><thead><tr>
     <th style="text-align:left;padding:6px 8px">Player</th>
+    <th style="${thStyle}">TOT</th>
     <th style="${thStyle}">R1</th>
     <th style="${thStyle}">R2</th>
     <th style="${thStyle}">R3</th>
     <th style="${thStyle}">R4</th>
     <th style="${thStyle}">R5</th>
     <th style="${thStyle}">R6</th>
-    <th style="${thStyle}">TOT</th>
   </tr></thead><tbody>`;
   ps.forEach(p => {
     const pts = getPlayerPts(p);
     const elim = isEliminated(p);
     const cols = getPlayerRoundCols(p);
-    const colCells = cols.map(v => `<td style="${tdStyle}">${v !== null ? v : '–'}</td>`).join('');
+    const colCells = cols.map(v => {
+      if (v === null) return `<td style="${tdStyle}">–</td>`;
+      if (v === 0) return `<td style="${tdStyle};color:#e05c5c;font-weight:600">0</td>`;
+      return `<td style="${tdStyle}">${v}</td>`;
+    }).join('');
     h += `<tr style="${elim?'opacity:0.4':''}">
       <td style="padding:6px 8px">
         <div class="pn">${p.n}${elim?' ✕':''}</div>
         <div class="ps">${p.s}</div>
       </td>
-      ${colCells}
       <td style="${tdPtsStyle}">${pts}</td>
+      ${colCells}
     </tr>`;
   });
   document.getElementById('tab-standings').innerHTML = h + '</tbody></table></div>';
@@ -580,22 +584,26 @@ function renderPlayers() {
   <div style="overflow-x:auto"><table style="min-width:560px"><thead><tr>
     <th style="text-align:left;padding:6px 8px">Player</th>
     <th style="text-align:left;padding:6px 8px">Owner</th>
+    <th style="${thS}">TOT</th>
     <th style="${thS}">R1</th><th style="${thS}">R2</th><th style="${thS}">R3</th>
     <th style="${thS}">R4</th><th style="${thS}">R5</th><th style="${thS}">R6</th>
-    <th style="${thS}">TOT</th>
   </tr></thead><tbody>`;
   all.forEach(({p,owner,pts}) => {
     const elim = isEliminated(p);
     const cols = getPlayerRoundCols(p);
-    const colCells = cols.map(v => `<td style="${tdS}">${v !== null ? v : '–'}</td>`).join('');
+    const colCells = cols.map(v => {
+      if (v === null) return `<td style="${tdS}">–</td>`;
+      if (v === 0) return `<td style="${tdS};color:#e05c5c;font-weight:600">0</td>`;
+      return `<td style="${tdS}">${v}</td>`;
+    }).join('');
     h += `<tr class="pr" style="${elim?'opacity:0.4':''}" data-q="${p.n.toLowerCase()} ${p.s.toLowerCase()} ${owner.toLowerCase()}">
       <td style="padding:6px 8px">
         <div class="pn">${p.n}${elim?' ✕':''}</div>
         <div class="ps">${p.s}</div>
       </td>
       <td style="padding:6px 8px"><span class="pi">${owner}</span></td>
-      ${colCells}
       <td style="${tdPS}">${pts}</td>
+      ${colCells}
     </tr>`;
   });
   document.getElementById('tab-players').innerHTML = h + '</tbody></table></div>';
