@@ -259,8 +259,8 @@ const TOURNEY_DATES = ['2026-03-19','2026-03-20','2026-03-21','2026-03-22','2026
 
 let livePts = {};        // cumulative pts per player name
 let roundPts = {};       // pts per player per round: { playerName: { 'Round of 64': 12, ... } }
-let persistedPts = {};   // never shrinks — preserves eliminated players' points
-let persistedRoundPts = {}; // same but per round
+let maxPts = {};         // high water mark per player — score never goes down
+let maxRoundPts = {};    // high water mark per player per round
 let liveGames = [];
 let elimIds = new Set();
 let elimSchools = new Set();
@@ -443,19 +443,20 @@ async function fetchAll() {
       } catch(e) { /* silent fail per game */ }
     }));
 
-    // Merge into persistedPts — never shrink (preserves eliminated players' scores)
+    // High water mark — never let a score drop due to a bad/incomplete fetch
     Object.entries(newPts).forEach(([name, pts]) => {
-      if (pts > (persistedPts[name] || 0)) persistedPts[name] = pts;
+      if (pts > (maxPts[name] || 0)) maxPts[name] = pts;
     });
-    // Merge per-round pts
     Object.entries(newRoundPts).forEach(([name, rounds]) => {
-      if (!persistedRoundPts[name]) persistedRoundPts[name] = {};
+      if (!maxRoundPts[name]) maxRoundPts[name] = {};
       Object.entries(rounds).forEach(([round, pts]) => {
-        if (pts > (persistedRoundPts[name][round] || 0)) persistedRoundPts[name][round] = pts;
+        if (pts > (maxRoundPts[name][round] || 0)) maxRoundPts[name][round] = pts;
       });
     });
-    livePts = { ...persistedPts };
-    roundPts = { ...persistedRoundPts };
+    // Merge: take max of new fetch and high water mark
+    livePts = { ...maxPts };
+    Object.entries(newPts).forEach(([n, v]) => { if ((livePts[n]||0) < v) livePts[n] = v; });
+    roundPts = { ...maxRoundPts };
     document.getElementById('lupd').textContent = 'Updated ' + new Date().toLocaleTimeString();
   } catch(e) {
     document.getElementById('lupd').textContent = 'Error: ' + e.message;
