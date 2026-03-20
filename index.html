@@ -397,11 +397,26 @@ async function fetchAll() {
               if (!espnName) return;
               const stats = athlete.stats || [];
               if (!stats.length) return;
-              if (stats.every(s => s === '0' || s === '-' || s === '--' || s === '')) return;
-              // MIN is always index 0 - if player has no minutes they didnt play in this game
+              // MIN is always index 0
               const minStr = stats[0] || '';
               const minVal = parseFloat(minStr);
-              if (!minStr || minStr === '-' || minStr === '--' || minStr === '0' || minVal === 0) return;
+              const didPlay = minStr && minStr !== '-' && minStr !== '--' && minStr !== '0' && minVal > 0;
+              const isFinal = gameStatus === 'STATUS_FINAL';
+
+              // If game is not final, skip players with no minutes (game not started yet)
+              if (!isFinal && !didPlay) return;
+
+              // If game IS final and player has no minutes, record 0 (they were available but didn't play)
+              if (isFinal && !didPlay) {
+                const player = matchPlayer(espnName);
+                if (player) {
+                  if (newPts[player.n] === undefined) newPts[player.n] = 0;
+                  if (!newRoundPts[player.n]) newRoundPts[player.n] = {};
+                  if (newRoundPts[player.n][round] === undefined) newRoundPts[player.n][round] = 0;
+                }
+                return;
+              }
+
               const pts = parseInt(stats[ptsIdx]);
               if (isNaN(pts) || pts < 0) return;
               const player = matchPlayer(espnName);
@@ -450,9 +465,10 @@ async function fetchAll() {
     Object.entries(newRoundPts).forEach(([name, rounds]) => {
       if (!maxRoundPts[name]) maxRoundPts[name] = {};
       Object.entries(rounds).forEach(([round, pts]) => {
-        // Preserve explicit 0 — means player played but scored nothing
         const cur = maxRoundPts[name][round];
-        if (cur === undefined || pts > cur) maxRoundPts[name][round] = pts;
+        // Preserve explicit 0 (didn't play or scored 0), but never overwrite a real score with 0
+        if (cur === undefined) maxRoundPts[name][round] = pts;
+        else if (pts > cur) maxRoundPts[name][round] = pts;
       });
     });
     // Merge: take max of new fetch and high water mark
