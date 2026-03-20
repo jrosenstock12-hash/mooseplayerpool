@@ -343,12 +343,8 @@ async function fetchAll() {
     });
 
     // Step 3: fetch box scores ONLY for NCAA tournament games (3/19/26 or later) that have started/finished
-    // Seed from persisted — so old rounds are never lost even if ESPN stops serving them
-    const newPts = { ...persistedPts };
-    const newRoundPts = {};
-    Object.entries(persistedRoundPts).forEach(([name, rounds]) => {
-      newRoundPts[name] = { ...rounds };
-    });
+    const newPts = {};
+    const newRoundPts = {}; // { playerName: { roundName: pts } }
     const boxScoreGames = tourneyGames
       .filter(g => {
         const st = g.status?.type?.name;
