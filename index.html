@@ -533,8 +533,8 @@ function teamTotal(t) { return t.players.reduce((s,p) => s + getPlayerPts(p), 0)
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function img(id) {
-  if (!id) return null;
-  return `https://wsrv.nl/?url=https%3A%2F%2Fa.espncdn.com%2Fcombiner%2Fi%3Fimg%3D%2Fi%2Fheadshots%2Fmens-college-basketball%2Fplayers%2Ffull%2F${id}.png%26w%3D64%26h%3D64%26scale%3Dcrop&w=64&h=64&fit=cover&mask=circle&output=png`;
+  return null;
+}
 }
 function ini(n) { return n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join(''); }
 function avt(p, sz=34, showX=false) {
