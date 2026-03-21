@@ -158,7 +158,7 @@ const TEAMS = [
     {n:"Braden Smith",s:"Purdue",id:5105854},{n:"David Mirkovic",s:"Illinois",id:5311832},{n:"Oscar Cluff",s:"Purdue",id:4702714},
     {n:"Malik Thomas",s:"Virginia",id:5313581},{n:"Mikey Lewis",s:"Saint Mary's",id:5240980},{n:"Urban Klavzar",s:"Florida",id:5313574},
     {n:"Nimari Burnett",s:"Michigan",id:4703375},{n:"Joshua Dent",s:"Saint Mary's",id:null},{n:"Malique Ewin",s:"Arkansas",id:5105546},
-    {n:"Camden Cox",s:"Purdue",id:null},{n:"Daniel Jacobson",s:"Purdue",id:null},{n:"Isaac McKneely",s:"Louisville",id:4712845},
+    {n:"C.J. Cox",s:"Purdue",id:null},{n:"Daniel Jacobsen",s:"Purdue",id:null},{n:"Isaac McKneely",s:"Louisville",id:4712845},
     {n:"Elijah Mahi",s:"Santa Clara",id:null}]},
   {name:"Klinge/Timmy",players:[
     {n:"Isaiah Evans",s:"Duke",id:5061585},{n:"Koa Peat",s:"Arizona",id:5041953},{n:"Tamin Lipsey",s:"Iowa State",id:5106254},
@@ -227,22 +227,30 @@ const HARDCODED_PTS = {
   "Amare Bynum": 12, "John Mobley Jr.": 15, "Bruce Thornton": 10, "Devin Royal": 14,
   // TCU (R1 winner vs Ohio State)
   "David Punch": 16,
-  // Michigan State (active - R1 hardcoded before live data)
-  "Matas Vokietaitis": 23, "Kur Teng": 3,
   // Georgia (eliminated R1, Saint Louis 102-77)
   "Kanon Catchings": 0, "Jeremiah Wilkinson": 30,
-  // Louisville (active - Mikel Brown Jr. out injured, Patrick Ngongba II active)
+  // Louisville (Mikel Brown Jr. out injured)
   "Mikel Brown Jr.": 0, "Patrick Ngongba II": 0,
   // McNeese (eliminated R1, Vanderbilt 78-68)
   "Larry Johnson": 15,
   // Saint Mary's (eliminated R1, Texas A&M 63-50)
   "Mikey Lewis": 0, "Joshua Dent": 18, "Paulius Murauskas": 4,
+  // Tennessee (ACTIVE - R1 winner vs Miami OH) - hardcode to fix wrongful elimination
+  "Ja'Kobi Gillespie": 29, "J.P. Estrella": 14, "Nate Ament": 0,
+  // Miami Hurricanes (ACTIVE - R1 winner vs Missouri) - hardcode to fix wrongful elimination
+  "Tre Donaldson": 17, "Tru Washington": 9, "Malik Reneau": 24, "Shelton Henderson": 15,
+  // Cal Baptist (eliminated R1, lost to Kansas)
+  "Dominique Daniels Jr.": 25,
+  // DNP R1 (played 0 minutes - hardcode so shows 0 not dash)
+  "Silas Demary Jr.": 0, "Tyler Bilodeau": 0,
+  // Purdue R1 scores
+  "C.J. Cox": 11, "Daniel Jacobsen": 4,
 };
 // Game IDs that are scheduled for future dates - never fetch box scores for these
 // These will be removed as games are played
 const BLOCKED_GAME_IDS = new Set([]);
 // Hardcoded eliminations for First Four losers (not in ESPN tournament data)
-const HARDCODED_ELIM = ["NC State", "SMU", "South Florida", "Wisconsin", "Ohio State", "Troy", "Saint Mary's", "Georgia", "North Carolina"];
+const HARDCODED_ELIM = ["NC State", "SMU", "South Florida", "Wisconsin", "Ohio State", "Troy", "Saint Mary's", "Georgia", "North Carolina", "Cal Baptist", "McNeese", "Hofstra"];
 // NCAA Tournament rounds in order — index 0 = R1, index 1 = R2, etc.
 // First Four counts as R1 for those players; everyone else starts at R1 = Round of 64
 const ROUND_ORDER = ['First Four','Round of 64','Round of 32','Sweet 16','Elite Eight','Final Four','Championship'];
