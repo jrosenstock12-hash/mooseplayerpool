@@ -226,11 +226,11 @@ const HARDCODED_PTS = {
   // Ohio State (eliminated R1, TCU 66-64)
   "Amare Bynum": 12, "John Mobley Jr.": 15, "Bruce Thornton": 10, "Devin Royal": 14,
   // TCU (R1 winner vs Ohio State)
-  "David Punch": 16,
+  
   // Georgia (eliminated R1, Saint Louis 102-77)
   "Kanon Catchings": 0, "Jeremiah Wilkinson": 30,
   // Louisville (Mikel Brown Jr. out injured)
-  "Mikel Brown Jr.": 0, "Patrick Ngongba II": 0,
+  "Mikel Brown Jr.": 0,
   // McNeese (eliminated R1, Vanderbilt 78-68)
   "Larry Johnson": 15,
   // Saint Mary's (eliminated R1, Texas A&M 63-50)
@@ -272,16 +272,12 @@ function getRoundForDate(dateStr) {
 }
 // Get a player's pts indexed by R1-R6 (chronological games played)
 function getPlayerRoundCols(p) {
-  if (HARDCODED_PTS[p.n] !== undefined) {
-    // Hardcoded — just show total in R1, no breakdown
-    return [HARDCODED_PTS[p.n], null, null, null, null, null];
-  }
   const rounds = roundPts[p.n] || {};
-  // Get all rounds this player scored in, sorted chronologically
   const played = ROUND_ORDER.filter(r => rounds[r] !== undefined);
-  // Map to R1-R6 columns — null=didn't play, 0=played scored 0, N=scored N
   const cols = [null,null,null,null,null,null];
   played.forEach((r, i) => { if (i < 6) cols[i] = rounds[r]; });
+  // Hardcoded R1 score — only applies to R1 col, live feed handles R2+
+  if (HARDCODED_PTS[p.n] !== undefined) cols[0] = HARDCODED_PTS[p.n];
   return cols;
 }
 // All tournament dates to fetch
@@ -521,7 +517,15 @@ async function fetchAll() {
 }
 
 function getPlayerPts(p) {
-  if (HARDCODED_PTS[p.n] !== undefined) return HARDCODED_PTS[p.n];
+  // If hardcoded R1, add that to any live R2+ points from the feed
+  if (HARDCODED_PTS[p.n] !== undefined) {
+    const r1 = HARDCODED_PTS[p.n];
+    // Live feed may include R1 pts for active players — subtract R1 to avoid double-count
+    // For eliminated players the live feed has nothing, so just use hardcode
+    const rounds = roundPts[p.n] || {};
+    const r2plus = ROUND_ORDER.slice(1).reduce((sum, r) => sum + (rounds[r] || 0), 0);
+    return r1 + r2plus;
+  }
   return livePts[p.n] || 0;
 }
 
