@@ -32,7 +32,7 @@ main{padding:1.5rem 2rem;max-width:1100px;margin:0 auto}
 .sr:hover{border-color:var(--bd2);background:var(--sur2)}
 .sr.r1{border-color:rgba(245,200,66,.3)}.sr.r2{border-color:rgba(176,184,204,.25)}.sr.r3{border-color:rgba(200,132,90,.25)}
 .rn{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--mu);text-align:center;line-height:1}
-.r1 .rn{color:var(--go)}.r2 .rn{color:var(--si)}.r3 .rn{color:var(--br)}
+.r1 .rn{color:#3a9e5f}.r2 .rn{color:#3a9e5f}.r3 .rn,.r4 .rn,.r5 .rn,.r6 .rn,.r7 .rn,.r8 .rn,.r9 .rn,.r10 .rn{color:#c94040}
 .sn{font-size:17px;font-weight:600}.sm{font-size:12px;color:var(--mu);margin-top:2px}
 .bw{height:6px;border-radius:3px;margin-top:6px;overflow:hidden;display:flex}
 .bg{height:100%;background:#3a9e5f}
@@ -579,7 +579,7 @@ function renderStandings() {
     const playerLabel = activePlayers === totalPlayers
       ? `${totalPlayers} players`
       : `${activePlayers} active · ${totalPlayers - activePlayers} eliminated`;
-    h += `<div class="sr ${i<3?'r'+(i+1):''}" onclick="showTeam(${oi})">
+    h += `<div class="sr r${i+1}" onclick="showTeam(${oi})">
       <div class="rn">${i+1}</div>
       <div><div class="sn">${t.name}</div><div class="sm">${playerLabel}</div><div class="bw"><div class="bg" style="width:${Math.round(activePlayers/totalPlayers*100)}%"></div><div class="br" style="width:${Math.round((totalPlayers-activePlayers)/totalPlayers*100)}%"></div></div></div>
       <div style="text-align:right"><div class="pb">${pts}</div><div class="plbl">pts</div></div>
