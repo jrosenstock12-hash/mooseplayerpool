@@ -297,8 +297,14 @@ let elimSchools = new Set();
 let curTab = 'standings';
 let curTeam = null; // track if we're viewing a team detail
 
+// Schools that must NEVER be marked eliminated regardless of ESPN data
+// (prevents false positives from Miami OH / Tennessee State confusion)
+const PROTECTED_SCHOOLS = ["tennessee","miami"];
+
 function isEliminated(p) {
   const sl = p.s.toLowerCase().trim();
+  // Never eliminate protected schools
+  if (PROTECTED_SCHOOLS.some(ps => sl === ps)) return false;
   // Check hardcoded First Four eliminations (exact match)
   if (HARDCODED_ELIM.some(e => sl === e.toLowerCase().trim())) return true;
   // Check ESPN-derived eliminations (exact match only - no fuzzy/contains)
