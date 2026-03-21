@@ -217,32 +217,22 @@ function matchPlayer(espnName) {
 // ── STATE ─────────────────────────────────────────────────────────────────────
 // Hardcoded First Four points (these never change)
 const HARDCODED_PTS = {
-  // First Four
+  // First Four (eliminated)
   "Quentin Copeland": 16, "Boopie Miller": 15, "Jaron Pierre Jr.": 18,
-  // South Florida (eliminated R1, Louisville 83-79)
+  // South Florida (eliminated R1)
   "Isaiah Nelson": 22, "Wes Enis": 4,
-  // Wisconsin (eliminated R1, High Point 83-82)
+  // Wisconsin (eliminated R1)
   "Alex Rapp": 12, "Nick Boyd": 27, "John Blackwell": 22, "Nolan Winter": 8,
-  // Ohio State (eliminated R1, TCU 66-64)
+  // Ohio State (eliminated R1)
   "Amare Bynum": 12, "John Mobley Jr.": 15, "Bruce Thornton": 10, "Devin Royal": 14,
-  // TCU (R1 winner vs Ohio State)
-  
-  // Georgia (eliminated R1, Saint Louis 102-77)
+  // Georgia (eliminated R1)
   "Kanon Catchings": 0, "Jeremiah Wilkinson": 30,
-  // Louisville (Mikel Brown Jr. out injured)
-  "Mikel Brown Jr.": 0,
-  // McNeese (eliminated R1, Vanderbilt 78-68)
+  // McNeese (eliminated R1)
   "Larry Johnson": 15,
-  // Saint Mary's (eliminated R1, Texas A&M 63-50)
+  // Saint Mary's (eliminated R1)
   "Mikey Lewis": 5, "Joshua Dent": 18, "Paulius Murauskas": 4,
-  // Tennessee (ACTIVE - R1 winner vs Miami OH) - hardcode to fix wrongful elimination
-  "Ja'Kobi Gillespie": 29, "J.P. Estrella": 14, "Nate Ament": 0,
-  // Miami Hurricanes (ACTIVE - R1 winner vs Missouri) - hardcode to fix wrongful elimination
-  "Tre Donaldson": 17, "Tru Washington": 9, "Malik Reneau": 24, "Shelton Henderson": 15,
-  // Cal Baptist (eliminated R1, lost to Kansas)
+  // Cal Baptist (eliminated R1)
   "Dominique Daniels Jr.": 25,
-  // DNP R1 (played 0 minutes - hardcode so shows 0 not dash)
-  "Silas Demary Jr.": 0, "Tyler Bilodeau": 0,
   // Purdue R1 scores
   "C.J. Cox": 11, "Daniel Jacobsen": 4,
 };
@@ -276,8 +266,8 @@ function getPlayerRoundCols(p) {
   const played = ROUND_ORDER.filter(r => rounds[r] !== undefined);
   const cols = [null,null,null,null,null,null];
   played.forEach((r, i) => { if (i < 6) cols[i] = rounds[r]; });
-  // Hardcoded R1 score — only applies to R1 col, live feed handles R2+
-  if (HARDCODED_PTS[p.n] !== undefined) cols[0] = HARDCODED_PTS[p.n];
+  // Only use hardcoded R1 if live feed has no data at all for this player
+  if (HARDCODED_PTS[p.n] !== undefined && played.length === 0) cols[0] = HARDCODED_PTS[p.n];
   return cols;
 }
 // All tournament dates to fetch
@@ -517,16 +507,11 @@ async function fetchAll() {
 }
 
 function getPlayerPts(p) {
-  // If hardcoded R1, add that to any live R2+ points from the feed
-  if (HARDCODED_PTS[p.n] !== undefined) {
-    const r1 = HARDCODED_PTS[p.n];
-    // Live feed may include R1 pts for active players — subtract R1 to avoid double-count
-    // For eliminated players the live feed has nothing, so just use hardcode
-    const rounds = roundPts[p.n] || {};
-    const r2plus = ROUND_ORDER.slice(1).reduce((sum, r) => sum + (rounds[r] || 0), 0);
-    return r1 + r2plus;
-  }
-  return livePts[p.n] || 0;
+  // If live feed has data for this player, always trust it (includes all rounds)
+  if (livePts[p.n]) return livePts[p.n];
+  // No live data — fall back to hardcoded R1 value (eliminated or DNP players)
+  if (HARDCODED_PTS[p.n] !== undefined) return HARDCODED_PTS[p.n];
+  return 0;
 }
 
 function teamTotal(t) { return t.players.reduce((s,p) => s + getPlayerPts(p), 0); }
