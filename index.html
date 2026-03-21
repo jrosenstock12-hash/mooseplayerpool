@@ -279,8 +279,14 @@ function getPlayerRoundCols(p) {
       if (col !== undefined) cols[col] = (cols[col] === null ? 0 : cols[col]) + rounds[r];
     }
   });
-  // Only use hardcoded R1 if live feed has no R1 data for this player
-  if (HARDCODED_PTS[p.n] !== undefined && cols[0] === null) cols[0] = HARDCODED_PTS[p.n];
+  // If hardcoded, always override col[0] with the hardcoded R1 value (0 for DNP)
+  // and shift any live R1 data into R2 if R2 is empty (ESPN mislabels R2 games as R1 for DNP players)
+  if (HARDCODED_PTS[p.n] !== undefined) {
+    const liveR1 = cols[0]; // what ESPN put in R1
+    cols[0] = HARDCODED_PTS[p.n]; // hardcoded R1 (0 for DNP)
+    // If ESPN put points in R1 but player didn't play R1, shift those points to R2
+    if (liveR1 !== null && liveR1 > 0 && cols[1] === null) cols[1] = liveR1;
+  }
   return cols;
 }
 // All tournament dates to fetch
