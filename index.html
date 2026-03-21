@@ -233,6 +233,8 @@ const HARDCODED_PTS = {
   "Mikey Lewis": 5, "Joshua Dent": 18, "Paulius Murauskas": 4,
   // Cal Baptist (eliminated R1)
   "Dominique Daniels Jr.": 25,
+  // DNP R1 - hardcode 0 so live R2+ points land in correct column
+  "Patrick Ngongba II": 0, "Silas Demary Jr.": 0, "Tyler Bilodeau": 0, "Mikel Brown Jr.": 0,
   // Purdue R1 scores
   "C.J. Cox": 11, "Daniel Jacobsen": 4,
 };
@@ -263,11 +265,22 @@ function getRoundForDate(dateStr) {
 // Get a player's pts indexed by R1-R6 (chronological games played)
 function getPlayerRoundCols(p) {
   const rounds = roundPts[p.n] || {};
-  const played = ROUND_ORDER.filter(r => rounds[r] !== undefined);
   const cols = [null,null,null,null,null,null];
-  played.forEach((r, i) => { if (i < 6) cols[i] = rounds[r]; });
-  // Only use hardcoded R1 if live feed has no data at all for this player
-  if (HARDCODED_PTS[p.n] !== undefined && played.length === 0) cols[0] = HARDCODED_PTS[p.n];
+  // Map each round to its fixed column by ROUND_ORDER index
+  // First Four and Round of 64 both map to col 0 (R1)
+  // Round of 32 -> col 1 (R2), Sweet 16 -> col 2 (R3), etc.
+  const roundToCol = {
+    'First Four': 0, 'Round of 64': 0, 'Round of 32': 1,
+    'Sweet 16': 2, 'Elite Eight': 3, 'Final Four': 4, 'Championship': 5
+  };
+  ROUND_ORDER.forEach(r => {
+    if (rounds[r] !== undefined) {
+      const col = roundToCol[r];
+      if (col !== undefined) cols[col] = (cols[col] === null ? 0 : cols[col]) + rounds[r];
+    }
+  });
+  // Only use hardcoded R1 if live feed has no R1 data for this player
+  if (HARDCODED_PTS[p.n] !== undefined && cols[0] === null) cols[0] = HARDCODED_PTS[p.n];
   return cols;
 }
 // All tournament dates to fetch
