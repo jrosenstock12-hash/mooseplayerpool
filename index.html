@@ -245,21 +245,19 @@ function getRoundForDate(dateStr) {
   return null;
 }
 // Get a player's pts indexed by R1-R6 (chronological games played)
+function getPlayerPts(p) {
+  return livePts[p.n] || 0;
+}
+
 function getPlayerRoundCols(p) {
   const roundToCol = {
     'First Four': 0, 'Round of 64': 0, 'Round of 32': 1,
     'Sweet 16': 2, 'Elite Eight': 3, 'Final Four': 4, 'Championship': 5
   };
   const cols = [null,null,null,null,null,null];
-
-  // Eliminated players with hardcode: show hardcode in R1 only, no live data
-  if (isEliminated(p)) {
-    if (HARDCODED_PTS[p.n] !== undefined) cols[0] = HARDCODED_PTS[p.n];
-    return cols;
-  }
-
-  // Active players: use live ESPN data mapped to correct round columns
   const rounds = roundPts[p.n] || {};
+
+  // Map live ESPN round data to correct columns
   ROUND_ORDER.forEach(r => {
     if (rounds[r] !== undefined) {
       const col = roundToCol[r];
@@ -267,265 +265,17 @@ function getPlayerRoundCols(p) {
     }
   });
 
-  // DNP R1 active players: hardcode overrides R1 col (0), shift any ESPN R1 data to R2
+  // DNP R1 players: force R1=0, shift any ESPN R1 data to R2
   if (HARDCODED_PTS[p.n] !== undefined) {
     const liveR1 = cols[0];
-    cols[0] = HARDCODED_PTS[p.n];
+    cols[0] = 0;
     if (liveR1 !== null && liveR1 > 0 && cols[1] === null) cols[1] = liveR1;
   }
 
   return cols;
 }
-// All tournament dates to fetch
-const TOURNEY_DATES = ['2026-03-19','2026-03-20','2026-03-21','2026-03-22','2026-03-23','2026-03-26','2026-03-27','2026-03-28','2026-03-29','2026-04-04','2026-04-06'];
 
-let livePts = {};        // cumulative pts per player name
-let roundPts = {};       // pts per player per round: { playerName: { 'Round of 64': 12, ... } }
-let maxPts = {};         // high water mark per player — score never goes down
-let maxRoundPts = {};    // high water mark per player per round
-let liveGames = [];
-let elimIds = new Set();
-let elimSchools = new Set();
-let curTab = 'standings';
-let curTeam = null; // track if we're viewing a team detail
-
-// Schools that must NEVER be marked eliminated regardless of ESPN data
-// (prevents false positives from Miami OH / Tennessee State confusion)
-const PROTECTED_SCHOOLS = ["tennessee","miami"];
-
-function isEliminated(p) {
-  const sl = p.s.toLowerCase().trim();
-  // Never eliminate protected schools
-  if (PROTECTED_SCHOOLS.some(ps => sl === ps)) return false;
-  // Check hardcoded First Four eliminations (exact match)
-  if (HARDCODED_ELIM.some(e => sl === e.toLowerCase().trim())) return true;
-  // Check ESPN-derived eliminations (exact match only - no fuzzy/contains)
-  if (elimSchools.has(sl)) return true;
-  // Check common alternate school name formats ESPN uses
-  for (const e of elimSchools) {
-    // Only match if the full player school name equals the full elim school name
-    // or one is a clean prefix of the other (e.g. "ohio state" == "ohio state buckeyes")
-    if (e.startsWith(sl + ' ') || sl.startsWith(e + ' ')) return true;
-    if (e === sl) return true;
-  }
-  return false;
-}
-
-// ── ESPN FETCH ────────────────────────────────────────────────────────────────
-async function fetchAll() {
-  try {
-    // Step 1: fetch scoreboard for all tournament dates
-    const today = new Date().toISOString().substring(0,10).replace(/-/g,'');
-    const allEvents = [];
-    await Promise.all(TOURNEY_DATES.map(async d => {
-      const dateParam = d.replace(/-/g,'');
-      const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?groups=100&seasontype=3&limit=100&dates=${dateParam}&_=${Date.now()}`;
-      try {
-        const res = await fetch(url);
-        if (!res.ok) return;
-        const data = await res.json();
-        (data.events || []).forEach(e => { e._fetchDate = d; allEvents.push(e); });
-      } catch(e) {}
-    }));
-
-    const isTourney = g => {
-      const notes = g.notes || [];
-      const name = (g.name || '').toLowerCase();
-      const season = g.season?.slug || '';
-      return notes.some(n => (n.headline||'').toLowerCase().includes('championship') || (n.headline||'').toLowerCase().includes('ncaa')) ||
-             name.includes('ncaa') || season.includes('tournament') ||
-             (g.competitions||[]).some(c => (c.notes||[]).some(n => (n.headline||'').toLowerCase().includes('championship'))) ||
-             (g.competitions||[]).some(c => (c.competitors||[]).some(t => t.curatedRank?.current > 0 || t.seed));
-    };
-    const tourneyGames = allEvents.filter(isTourney);
-    liveGames = tourneyGames.length > 0 ? tourneyGames : allEvents;
-
-    // Step 2: track eliminations from FINAL games only (NCAA tourney only - 3/19/26+)
-    const activeIds = [];
-    elimIds = new Set();
-    elimSchools = new Set();
-    tourneyGames.forEach(g => {
-      const st = g.status?.type?.name;
-      const stateType = g.status?.type?.state;
-      const dateStr = g.date || g.competitions?.[0]?.date || '';
-      const datePart = dateStr.substring(0, 10);
-      if (datePart && datePart < '2026-03-19') return; // skip pre-tournament games
-      if (st === 'STATUS_IN_PROGRESS' || st === 'STATUS_FINAL' || st === 'STATUS_HALFTIME' || stateType === 'in') {
-        activeIds.push(g.id);
-        if (st === 'STATUS_FINAL') {
-          (g.competitions||[]).forEach(c => {
-            (c.competitors||[]).forEach(comp => {
-              if (comp.winner === false) {
-                elimIds.add(comp.team?.id);
-                const loc = (comp.team?.location || '').toLowerCase();
-                const name = (comp.team?.name || '').toLowerCase();
-                const display = (comp.team?.displayName || '').toLowerCase();
-                if (loc) elimSchools.add(loc);
-                if (name) elimSchools.add(name);
-                if (display) elimSchools.add(display);
-              }
-            });
-          });
-        }
-      }
-    });
-
-    // Step 3: fetch box scores ONLY for NCAA tournament games (3/19/26 or later) that have started/finished
-    const newPts = {};
-    const newRoundPts = {}; // { playerName: { roundName: pts } }
-    const boxScoreGames = tourneyGames
-      .filter(g => {
-        const st = g.status?.type?.name;
-        const stateType = g.status?.type?.state;
-        if (st !== 'STATUS_IN_PROGRESS' && st !== 'STATUS_HALFTIME' && st !== 'STATUS_FINAL' && stateType !== 'in') return false;
-        const dateStr = g._fetchDate || g.date || g.competitions?.[0]?.date || '';
-        const datePart = dateStr.substring(0, 10);
-        if (datePart && datePart < '2026-03-19') return false;
-        return true;
-      })
-      .filter(g => !BLOCKED_GAME_IDS.has(g.id));
-    const boxScoreIds = boxScoreGames.map(g => g.id);
-    const gameRoundMap = {}; // gameId -> round name
-    boxScoreGames.forEach(g => {
-      const dateStr = g._fetchDate || g.date || g.competitions?.[0]?.date || '';
-      gameRoundMap[g.id] = getRoundForDate(dateStr);
-    });
-
-    await Promise.all(boxScoreIds.map(async id => {
-      const round = gameRoundMap[id] || 'Tournament';
-      try {
-        const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary?event=${id}&_=${Date.now()}`;
-        const res = await fetch(url);
-        if (!res.ok) return;
-        const data = await res.json();
-
-        // CRITICAL GUARD: Only count points if the game has actually been played.
-        const gameStatus = data.header?.competitions?.[0]?.status?.type?.name || '';
-        const gameState = data.header?.competitions?.[0]?.status?.type?.state || '';
-        const homeScore = parseInt(data.header?.competitions?.[0]?.competitors?.[0]?.score) || 0;
-        const awayScore = parseInt(data.header?.competitions?.[0]?.competitors?.[1]?.score) || 0;
-        const totalScore = homeScore + awayScore;
-        const teams = (data.header?.competitions?.[0]?.competitors||[]).map(c=>c.team?.abbreviation||c.team?.location||'').join(' vs ');
-        console.log(`Box score check: ${teams} | status=${gameStatus} | state=${gameState} | score=${homeScore}-${awayScore}`);
-        const isScheduled = gameStatus === 'STATUS_SCHEDULED' || gameStatus === 'STATUS_PRE' || gameState === 'pre';
-        if (isScheduled) { console.log(`SKIPPING ${teams} - scheduled`); return; }
-        if (totalScore === 0 && gameState !== 'in') { console.log(`SKIPPING ${teams} - no score and not live`); return; }
-
-        const playerGroups = data.boxscore?.players || [];
-
-        let foundAny = false;
-        playerGroups.forEach(teamGroup => {
-          (teamGroup.statistics || []).forEach(sg => {
-            const labels = sg.labels || sg.names || [];
-            let ptsIdx = labels.indexOf('PTS');
-            if (ptsIdx === -1) ptsIdx = 1; // confirmed: PTS is index 1
-
-            (sg.athletes || []).forEach(athlete => {
-              const espnName = athlete.athlete?.displayName;
-              if (!espnName) return;
-              const stats = athlete.stats || [];
-              if (!stats.length) return;
-              const isFinal = gameStatus === 'STATUS_FINAL';
-              // For non-final games, skip rows where ALL stats are empty/zero (pre-game placeholders)
-              if (!isFinal && stats.every(s => s === '0' || s === '-' || s === '--' || s === '')) return;
-              // MIN is always index 0
-              const minStr = stats[0] || '';
-              const minVal = parseFloat(minStr);
-              const didPlay = minStr && minStr !== '-' && minStr !== '--' && minStr !== '0' && minVal > 0;
-
-              // If game is not final, skip players with no minutes (game not started yet)
-              if (!isFinal && !didPlay) return;
-
-              // If game IS final and player has no minutes, record 0 (they were available but didn't play)
-              if (isFinal && !didPlay) {
-                const player = matchPlayer(espnName);
-                if (player) {
-                  if (newPts[player.n] === undefined) newPts[player.n] = 0;
-                  if (!newRoundPts[player.n]) newRoundPts[player.n] = {};
-                  if (newRoundPts[player.n][round] === undefined) newRoundPts[player.n][round] = 0;
-                }
-                return;
-              }
-
-              const pts = parseInt(stats[ptsIdx]);
-              if (isNaN(pts) || pts < 0) return;
-              const player = matchPlayer(espnName);
-              if (player) {
-                newPts[player.n] = (newPts[player.n] || 0) + pts;
-                if (!newRoundPts[player.n]) newRoundPts[player.n] = {};
-                newRoundPts[player.n][round] = (newRoundPts[player.n][round] || 0) + pts;
-                if (pts > 0) foundAny = true;
-              }
-            });
-          });
-        });
-
-        // Fallback for live games: ESPN sometimes delays stats population.
-        // Use the plays array to count points per player from scoring plays.
-        if (!foundAny) {
-          const playerTotals = {};
-          (data.plays || []).forEach(play => {
-            if (!play.scoringPlay) return;
-            const name = play.participants?.[0]?.athlete?.displayName || '';
-            if (!name) return;
-            // Each scoring play has a homeScore/awayScore delta we can track
-            // Simpler: use pointsAfter if available
-            const pts = play.pointsScored || play.scoreValue;
-            if (pts && pts > 0) {
-              playerTotals[name] = (playerTotals[name] || 0) + pts;
-            }
-          });
-          Object.entries(playerTotals).forEach(([name, pts]) => {
-            const player = matchPlayer(name);
-            if (player && pts > 0) {
-              newPts[player.n] = (newPts[player.n] || 0) + pts;
-              if (!newRoundPts[player.n]) newRoundPts[player.n] = {};
-              newRoundPts[player.n][round] = (newRoundPts[player.n][round] || 0) + pts;
-            }
-          });
-        }
-
-      } catch(e) { /* silent fail per game */ }
-    }));
-
-    // High water mark — never let a score drop due to a bad/incomplete fetch
-    Object.entries(newPts).forEach(([name, pts]) => {
-      if (pts > (maxPts[name] || 0)) maxPts[name] = pts;
-    });
-    Object.entries(newRoundPts).forEach(([name, rounds]) => {
-      if (!maxRoundPts[name]) maxRoundPts[name] = {};
-      Object.entries(rounds).forEach(([round, pts]) => {
-        const cur = maxRoundPts[name][round];
-        // Preserve explicit 0 (didn't play or scored 0), but never overwrite a real score with 0
-        if (cur === undefined) maxRoundPts[name][round] = pts;
-        else if (pts > cur) maxRoundPts[name][round] = pts;
-      });
-    });
-    // Merge: take max of new fetch and high water mark
-    livePts = { ...maxPts };
-    Object.entries(newPts).forEach(([n, v]) => { if ((livePts[n]||0) < v) livePts[n] = v; });
-    roundPts = { ...maxRoundPts };
-    document.getElementById('lupd').textContent = 'Updated ' + new Date().toLocaleTimeString();
-  } catch(e) {
-    document.getElementById('lupd').textContent = 'Error: ' + e.message;
-  }
-  renderAll();
-}
-
-function getPlayerPts(p) {
-  // If live feed has data for this player, always trust it (includes all rounds)
-  if (livePts[p.n]) return livePts[p.n];
-  // No live data — fall back to hardcoded R1 value (eliminated or DNP players)
-  if (HARDCODED_PTS[p.n] !== undefined) return HARDCODED_PTS[p.n];
-  return 0;
-}
-
-function teamTotal(t) { return t.players.reduce((s,p) => s + getPlayerPts(p), 0); }
-
-// ── HELPERS ───────────────────────────────────────────────────────────────────
-function img(id) {
-  if (!id) return null;
-  return `https://wsrv.nl/?url=https%3A%2F%2Fa.espncdn.com%2Fcombiner%2Fi%3Fimg%3D%2Fi%2Fheadshots%2Fmens-college-basketball%2Fplayers%2Ffull%2F${id}.png%26w%3D64%26h%3D64%26scale%3Dcrop&w=64&h=64&fit=cover&mask=circle&output=png`;
+2Fa.espncdn.com%2Fcombiner%2Fi%3Fimg%3D%2Fi%2Fheadshots%2Fmens-college-basketball%2Fplayers%2Ffull%2F${id}.png%26w%3D64%26h%3D64%26scale%3Dcrop&w=64&h=64&fit=cover&mask=circle&output=png`;
 }
 function ini(n) { return n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join(''); }
 function avt(p, sz=34, showX=false) {
