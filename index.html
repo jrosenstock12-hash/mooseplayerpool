@@ -288,8 +288,14 @@ function getPlayerPts(p) {
 // - Late Friday games ESPN returns as March 21 UTC (Missouri vs Miami ~10pm ET)
 // - First Four losers (SMU, NC State) not fetched to avoid crediting Texas/Miami OH
 const R1_FORCE = {
+  // Late Friday games (tipped after 8pm ET = March 21 UTC) — Missouri vs Miami
   "Mark Mitchell": 19,
   "Jayden Stone": 21,
+  // Late Friday games — Kansas vs Cal Baptist (tip 9:45pm ET = March 21 UTC)
+  // ET timezone fix should handle these, but R1_FORCE is a safety net
+  "Darryn Peterson": 28,
+  "Tre White": 12,
+  // First Four losers (SMU, NC State) — games not fetched to avoid crediting Texas/Miami OH
   "Jaron Pierre Jr.": 18,
   "Quadir Copeland": 16,
   "Boopie Miller": 15,
