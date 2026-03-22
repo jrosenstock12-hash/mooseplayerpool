@@ -277,7 +277,11 @@ function isEliminated(p) {
 }
 
 function getPlayerPts(p) {
-  return livePts[p.n] || 0;
+  const live = livePts[p.n] || 0;
+  // Add R1_FORCE points for players whose games aren't fetched (First Four losers, UTC date fixes)
+  const forced = R1_FORCE[p.n] !== undefined ? R1_FORCE[p.n] : 0;
+  // Only add forced if live doesn't already include them (live will be 0 for First Four losers)
+  return live > 0 ? live : forced;
 }
 
 // R1 points override:
