@@ -375,8 +375,9 @@ async function fetchAll() {
             (teamPlayers.statistics||[]).forEach(statGroup => {
               (statGroup.athletes||[]).forEach(ath => {
                 const espnName = ath.athlete?.displayName;
-                const pname = matchPlayer(espnName);
-                if (!pname) return;
+                const player = matchPlayer(espnName);
+                if (!player) return;
+                const pname = player.n;
                 const stats = ath.stats || [];
                 const pts = parseInt(stats[1]) || 0;
                 const mins = stats[0] || '0';
