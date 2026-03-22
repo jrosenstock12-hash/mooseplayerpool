@@ -217,26 +217,8 @@ function matchPlayer(espnName) {
 // ── STATE ─────────────────────────────────────────────────────────────────────
 // Hardcoded First Four points (these never change)
 const HARDCODED_PTS = {
-  // First Four (eliminated)
-  "Quentin Copeland": 16, "Boopie Miller": 15, "Jaron Pierre Jr.": 18,
-  // South Florida (eliminated R1)
-  "Isaiah Nelson": 22, "Wes Enis": 4,
-  // Wisconsin (eliminated R1)
-  "Alex Rapp": 12, "Nick Boyd": 27, "John Blackwell": 22, "Nolan Winter": 8,
-  // Ohio State (eliminated R1)
-  "Amare Bynum": 12, "John Mobley Jr.": 15, "Bruce Thornton": 10, "Devin Royal": 14,
-  // Georgia (eliminated R1)
-  "Kanon Catchings": 0, "Jeremiah Wilkinson": 30,
-  // McNeese (eliminated R1)
-  "Larry Johnson": 15,
-  // Saint Mary's (eliminated R1)
-  "Mikey Lewis": 5, "Joshua Dent": 18, "Paulius Murauskas": 4,
-  // Cal Baptist (eliminated R1)
-  "Dominique Daniels Jr.": 25,
-  // DNP R1 - hardcode 0 so live R2+ points land in correct column
+  // DNP R1 active players - hardcode 0 so live R2+ points land in correct column
   "Patrick Ngongba II": 0, "Silas Demary Jr.": 0, "Tyler Bilodeau": 0, "Mikel Brown Jr.": 0,
-  // Purdue R1 scores
-  "C.J. Cox": 11, "Daniel Jacobsen": 4,
 };
 // Game IDs that are scheduled for future dates - never fetch box scores for these
 // These will be removed as games are played
@@ -264,29 +246,34 @@ function getRoundForDate(dateStr) {
 }
 // Get a player's pts indexed by R1-R6 (chronological games played)
 function getPlayerRoundCols(p) {
-  const rounds = roundPts[p.n] || {};
-  const cols = [null,null,null,null,null,null];
-  // Map each round to its fixed column by ROUND_ORDER index
-  // First Four and Round of 64 both map to col 0 (R1)
-  // Round of 32 -> col 1 (R2), Sweet 16 -> col 2 (R3), etc.
   const roundToCol = {
     'First Four': 0, 'Round of 64': 0, 'Round of 32': 1,
     'Sweet 16': 2, 'Elite Eight': 3, 'Final Four': 4, 'Championship': 5
   };
+  const cols = [null,null,null,null,null,null];
+
+  // Eliminated players with hardcode: show hardcode in R1 only, no live data
+  if (isEliminated(p)) {
+    if (HARDCODED_PTS[p.n] !== undefined) cols[0] = HARDCODED_PTS[p.n];
+    return cols;
+  }
+
+  // Active players: use live ESPN data mapped to correct round columns
+  const rounds = roundPts[p.n] || {};
   ROUND_ORDER.forEach(r => {
     if (rounds[r] !== undefined) {
       const col = roundToCol[r];
       if (col !== undefined) cols[col] = (cols[col] === null ? 0 : cols[col]) + rounds[r];
     }
   });
-  // If hardcoded, always override col[0] with the hardcoded R1 value (0 for DNP)
-  // and shift any live R1 data into R2 if R2 is empty (ESPN mislabels R2 games as R1 for DNP players)
+
+  // DNP R1 active players: hardcode overrides R1 col (0), shift any ESPN R1 data to R2
   if (HARDCODED_PTS[p.n] !== undefined) {
-    const liveR1 = cols[0]; // what ESPN put in R1
-    cols[0] = HARDCODED_PTS[p.n]; // hardcoded R1 (0 for DNP)
-    // If ESPN put points in R1 but player didn't play R1, shift those points to R2
+    const liveR1 = cols[0];
+    cols[0] = HARDCODED_PTS[p.n];
     if (liveR1 !== null && liveR1 > 0 && cols[1] === null) cols[1] = liveR1;
   }
+
   return cols;
 }
 // All tournament dates to fetch
