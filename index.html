@@ -372,8 +372,9 @@ async function fetchAll() {
     elimSchools = newElimSchools;
     liveGames = games;
 
+    const scoredNames = Object.keys(newLivePts).slice(0,3).join(', ');
     const ts = new Date().toLocaleTimeString();
-    document.getElementById('lupd').textContent = `Updated ${ts} | ${allEvents.length} games | ${Object.keys(newLivePts).length} players scored`;
+    document.getElementById('lupd').textContent = `Updated ${ts} | ${allEvents.length} games | ${Object.keys(newLivePts).length} players scored | eg: ${scoredNames}`;
   } catch(e) {
     document.getElementById('lupd').textContent = 'Error: ' + e.message;
   }
