@@ -319,16 +319,8 @@ async function fetchAll() {
       } catch(e) {}
     }));
 
-    const isTourney = g => {
-      const notes = g.notes || [];
-      const name = (g.name || '').toLowerCase();
-      return notes.some(n => (n.headline||'').toLowerCase().includes('championship') || (n.headline||'').toLowerCase().includes('ncaa')) ||
-             name.includes('ncaa') ||
-             (g.competitions||[]).some(c => (c.competitors||[]).some(t => t.seed));
-    };
-
     const gameRoundMap = {};
-    allEvents.filter(isTourney).forEach(g => {
+    allEvents.forEach(g => {
       const dateStr = g._fetchDate;
       const round = getRoundForDate(dateStr);
       if (round) gameRoundMap[g.id] = round;
@@ -341,7 +333,7 @@ async function fetchAll() {
     const games = [];
 
     await Promise.all(
-      allEvents.filter(g => isTourney(g) && !BLOCKED_GAME_IDS.has(g.id)).map(async g => {
+      allEvents.filter(g => !BLOCKED_GAME_IDS.has(g.id)).map(async g => {
         const comp = (g.competitions||[])[0];
         if (!comp) return;
         const status = comp.status?.type?.name || '';
@@ -365,6 +357,7 @@ async function fetchAll() {
             }
           });
         }
+        games.push({g, isLive, isFinal, comp});
         try {
           const burl = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary?event=${g.id}&_=${Date.now()}`;
           const bres = await fetch(burl);
@@ -392,7 +385,6 @@ async function fetchAll() {
               });
             });
           });
-          games.push({g, isLive, isFinal, comp});
         } catch(e) {}
       })
     );
