@@ -173,7 +173,7 @@ const TEAMS = [
     {n:"Mark Mitchell",s:"Missouri",id:4702660},{n:"Bennett Stirtz",s:"Iowa",id:5107175},{n:"Tavari Johnson",s:"Akron",id:5108059},
     {n:"Cruz Davis",s:"Hofstra",id:5107198},{n:"Blake Buchanan",s:"Iowa State",id:4432738},{n:"Rashaun Agee",s:"Texas A&M",id:4593815},
     {n:"Jaron Pierre Jr.",s:"SMU",id:4703115},{n:"Duke Brennan",s:"Villanova",id:null},{n:"Larry Johnson",s:"McNeese",id:null},
-    {n:"Quentin Copeland",s:"NC State",id:null}]},
+    {n:"Quadir Copeland",s:"NC State",id:null}]},
   {name:"Eisner",players:[
     {n:"AJ Dybantsa",s:"BYU",id:5041952},{n:"Labaron Philon Jr.",s:"Alabama",id:4873090},{n:"Duke Miles",s:"Vanderbilt",id:5107196},
     {n:"Solo Ball",s:"UConn",id:4895737},{n:"Tyler Nickel",s:"Vanderbilt",id:4703409},{n:"Kylan Boswell",s:"Illinois",id:4684269},
@@ -218,7 +218,7 @@ function matchPlayer(espnName) {
 
 // Round dates — tells us which round each game belongs to
 const ROUND_DATES = {
-  'Round of 64':   ['2026-03-19','2026-03-20'],
+  'Round of 64':   ['2026-03-17','2026-03-18','2026-03-19','2026-03-20'],
   'Round of 32':   ['2026-03-21','2026-03-22'],
   'Sweet 16':      ['2026-03-26','2026-03-27'],
   'Elite Eight':   ['2026-03-28','2026-03-29'],
@@ -230,7 +230,7 @@ const ROUND_DATES = {
 const FIRST_FOUR_DATES = ['2026-03-18','2026-03-19'];
 
 // All tournament dates to fetch
-const TOURNEY_DATES = ['2026-03-19','2026-03-20','2026-03-21','2026-03-22','2026-03-26','2026-03-27','2026-03-28','2026-03-29','2026-04-04','2026-04-06'];
+const TOURNEY_DATES = ['2026-03-17','2026-03-18','2026-03-19','2026-03-20','2026-03-21','2026-03-22','2026-03-26','2026-03-27','2026-03-28','2026-03-29','2026-04-04','2026-04-06'];
 
 // Column index for each round (R1=0, R2=1, etc.)
 const ROUND_TO_COL = {
@@ -279,12 +279,24 @@ function getPlayerPts(p) {
   return livePts[p.n] || 0;
 }
 
+// R1 points override for late Friday games that ESPN returns as March 21 UTC
+// (Missouri vs Miami tipped ~10pm ET March 20 = March 21 UTC)
+const R1_FORCE = {
+  "Mark Mitchell": 19,
+  "Jayden Stone": 21,
+};
+
 function getPlayerRoundCols(p) {
   const cols = [null, null, null, null, null, null];
   const rounds = roundPts[p.n] || {};
   Object.entries(ROUND_TO_COL).forEach(([round, col]) => {
     if (rounds[round] !== undefined) cols[col] = rounds[round];
   });
+  // Force R1 for late Friday games mis-dated as March 21 UTC
+  if (R1_FORCE[p.n] !== undefined && cols[0] === null) {
+    cols[0] = R1_FORCE[p.n];
+    cols[1] = null; // clear any R2 that was wrongly assigned
+  }
   return cols;
 }
 
@@ -304,8 +316,11 @@ async function fetchAll() {
         if (!res.ok) return;
         const data = await res.json();
         (data.events || []).forEach(e => {
-          // Use actual game date from ESPN, not fetch date
-          const gameDate = (e.competitions?.[0]?.date || e.date || d).substring(0, 10);
+          // Use game START time in ET to determine date (avoids UTC midnight bleed)
+          const rawDate = e.competitions?.[0]?.date || e.date || d;
+          let gameDate;
+          try { gameDate = new Date(rawDate).toLocaleDateString('en-CA', {timeZone:'America/New_York'}); }
+          catch(_) { gameDate = rawDate.substring(0, 10); }
           e._date = gameDate;
           allEvents.push(e);
         });
