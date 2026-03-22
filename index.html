@@ -218,7 +218,6 @@ function matchPlayer(espnName) {
 
 // Round dates — tells us which round each game belongs to
 const ROUND_DATES = {
-  'First Four':    ['2026-03-17','2026-03-18'],
   'Round of 64':   ['2026-03-19','2026-03-20'],
   'Round of 32':   ['2026-03-21','2026-03-22'],
   'Sweet 16':      ['2026-03-26','2026-03-27'],
@@ -227,23 +226,17 @@ const ROUND_DATES = {
   'Championship':  ['2026-04-06'],
 };
 
-// First Four dates — separate so we don't double-count with Round of 64
-const FIRST_FOUR_DATES = ['2026-03-18','2026-03-19'];
-
 // All tournament dates to fetch
 const TOURNEY_DATES = ['2026-03-19','2026-03-20','2026-03-21','2026-03-22','2026-03-26','2026-03-27','2026-03-28','2026-03-29','2026-04-04','2026-04-06'];
 
 // Column index for each round (R1=0, R2=1, etc.)
 const ROUND_TO_COL = {
-  'First Four': 0, 'Round of 64': 0, 'Round of 32': 1, 'Sweet 16': 2,
+  'Round of 64': 0, 'Round of 32': 1, 'Sweet 16': 2,
   'Elite Eight': 3, 'Final Four': 4, 'Championship': 5
 };
 
 // Schools protected from auto-elimination (avoids Miami OH / Tennessee State confusion)
 const PROTECTED_SCHOOLS = ['tennessee', 'miami'];
-
-// First Four losers — manually tracked since we skip those dates
-const FIRST_FOUR_ELIM = ['nc state', 'smu'];
 
 // State
 let livePts = {};      // { playerName: totalPts }
@@ -263,42 +256,28 @@ function getRoundForDate(dateStr) {
 
 function isEliminated(p) {
   const sl = p.s.toLowerCase().trim();
-  // Never eliminate protected schools (avoids false positives)
+  // Never eliminate protected schools (avoid Tennessee State / Miami OH confusion)
   if (PROTECTED_SCHOOLS.includes(sl)) return false;
-  // First Four losers
-  if (FIRST_FOUR_ELIM.includes(sl)) return true;
-  // Live feed eliminations
-  if (elimSchools.has(sl)) return true;
-  // Partial match (e.g. "ohio state" matches "ohio state buckeyes")
-  for (const e of elimSchools) {
-    if (e === sl || e.startsWith(sl + ' ') || sl.startsWith(e + ' ')) return true;
-  }
-  return false;
+  // Exact match against ESPN location field (e.g. "kansas", "duke", "texas a&m")
+  return elimSchools.has(sl);
 }
 
 function getPlayerPts(p) {
   const live = livePts[p.n] || 0;
-  // Add R1_FORCE points for players whose games aren't fetched (First Four losers, UTC date fixes)
+  // R1_FORCE: safety net for late-night games where ET conversion may have edge cases
   const forced = R1_FORCE[p.n] !== undefined ? R1_FORCE[p.n] : 0;
-  // Only add forced if live doesn't already include them (live will be 0 for First Four losers)
+  // Only applies when live ESPN data returns 0 (forced value is ignored if live data exists)
   return live > 0 ? live : forced;
 }
 
 // R1 points override:
 // - Late Friday games ESPN returns as March 21 UTC (Missouri vs Miami ~10pm ET)
-// - First Four losers (SMU, NC State) not fetched to avoid crediting Texas/Miami OH
 const R1_FORCE = {
-  // Late Friday games (tipped after 8pm ET = March 21 UTC) — Missouri vs Miami
+  // Safety net for late Friday games where ET timezone fix may still have edge cases
   "Mark Mitchell": 19,
   "Jayden Stone": 21,
-  // Late Friday games — Kansas vs Cal Baptist (tip 9:45pm ET = March 21 UTC)
-  // ET timezone fix should handle these, but R1_FORCE is a safety net
   "Darryn Peterson": 28,
   "Tre White": 12,
-  // First Four losers (SMU, NC State) — games not fetched to avoid crediting Texas/Miami OH
-  "Jaron Pierre Jr.": 18,
-  "Quadir Copeland": 16,
-  "Boopie Miller": 15,
 };
 
 function getPlayerRoundCols(p) {
@@ -367,16 +346,12 @@ async function fetchAll() {
       // Always add to games list for scores tab
       games.push(g);
 
-      // Track eliminations from final games
+      // Track eliminations: for each final game, mark the loser by their location (e.g. "kansas")
       if (isFinal) {
         (comp.competitors || []).forEach(team => {
           if (!team.winner) {
-            const loc = team.team?.location?.toLowerCase();
-            const name = team.team?.name?.toLowerCase();
-            const display = team.team?.displayName?.toLowerCase();
+            const loc = team.team?.location?.toLowerCase().trim();
             if (loc) newElimSchools.add(loc);
-            if (name) newElimSchools.add(name);
-            if (display) newElimSchools.add(display);
           }
         });
       }
@@ -386,14 +361,6 @@ async function fetchAll() {
 
       const round = getRoundForDate(g._date);
       if (!round) return; // skip if we don't know the round
-
-      // For First Four games, only process if a First Four loser is involved
-      // (prevents double-counting for teams like Texas that played both First Four AND R1)
-      if (round === 'First Four') {
-        const teams = (g.competitions?.[0]?.competitors || []).map(c => c.team?.location?.toLowerCase());
-        const hasFirstFourLoser = teams.some(t => FIRST_FOUR_ELIM.some(ff => t && (t === ff || t.includes(ff) || ff.includes(t))));
-        if (!hasFirstFourLoser) return;
-      }
 
       try {
         const burl = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary?event=${g.id}&_=${Date.now()}`;
