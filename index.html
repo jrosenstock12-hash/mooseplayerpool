@@ -218,7 +218,8 @@ function matchPlayer(espnName) {
 
 // Round dates — tells us which round each game belongs to
 const ROUND_DATES = {
-  'Round of 64':   ['2026-03-17','2026-03-18','2026-03-19','2026-03-20'],
+  'First Four':    ['2026-03-17','2026-03-18'],
+  'Round of 64':   ['2026-03-19','2026-03-20'],
   'Round of 32':   ['2026-03-21','2026-03-22'],
   'Sweet 16':      ['2026-03-26','2026-03-27'],
   'Elite Eight':   ['2026-03-28','2026-03-29'],
@@ -230,11 +231,11 @@ const ROUND_DATES = {
 const FIRST_FOUR_DATES = ['2026-03-18','2026-03-19'];
 
 // All tournament dates to fetch
-const TOURNEY_DATES = ['2026-03-17','2026-03-18','2026-03-19','2026-03-20','2026-03-21','2026-03-22','2026-03-26','2026-03-27','2026-03-28','2026-03-29','2026-04-04','2026-04-06'];
+const TOURNEY_DATES = ['2026-03-19','2026-03-20','2026-03-21','2026-03-22','2026-03-26','2026-03-27','2026-03-28','2026-03-29','2026-04-04','2026-04-06'];
 
 // Column index for each round (R1=0, R2=1, etc.)
 const ROUND_TO_COL = {
-  'Round of 64': 0, 'Round of 32': 1, 'Sweet 16': 2,
+  'First Four': 0, 'Round of 64': 0, 'Round of 32': 1, 'Sweet 16': 2,
   'Elite Eight': 3, 'Final Four': 4, 'Championship': 5
 };
 
@@ -279,11 +280,15 @@ function getPlayerPts(p) {
   return livePts[p.n] || 0;
 }
 
-// R1 points override for late Friday games that ESPN returns as March 21 UTC
-// (Missouri vs Miami tipped ~10pm ET March 20 = March 21 UTC)
+// R1 points override:
+// - Late Friday games ESPN returns as March 21 UTC (Missouri vs Miami ~10pm ET)
+// - First Four losers (SMU, NC State) not fetched to avoid crediting Texas/Miami OH
 const R1_FORCE = {
   "Mark Mitchell": 19,
   "Jayden Stone": 21,
+  "Jaron Pierre Jr.": 18,
+  "Quadir Copeland": 16,
+  "Boopie Miller": 15,
 };
 
 function getPlayerRoundCols(p) {
@@ -371,6 +376,14 @@ async function fetchAll() {
 
       const round = getRoundForDate(g._date);
       if (!round) return; // skip if we don't know the round
+
+      // For First Four games, only process if a First Four loser is involved
+      // (prevents double-counting for teams like Texas that played both First Four AND R1)
+      if (round === 'First Four') {
+        const teams = (g.competitions?.[0]?.competitors || []).map(c => c.team?.location?.toLowerCase());
+        const hasFirstFourLoser = teams.some(t => FIRST_FOUR_ELIM.some(ff => t && (t === ff || t.includes(ff) || ff.includes(t))));
+        if (!hasFirstFourLoser) return;
+      }
 
       try {
         const burl = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary?event=${g.id}&_=${Date.now()}`;
