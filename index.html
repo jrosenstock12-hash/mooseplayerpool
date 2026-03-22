@@ -269,22 +269,8 @@ function isEliminated(p) {
 }
 
 function getPlayerPts(p) {
-  const live = livePts[p.n] || 0;
-  // R1_FORCE: safety net for late-night games where ET conversion may have edge cases
-  const forced = R1_FORCE[p.n] !== undefined ? R1_FORCE[p.n] : 0;
-  // Only applies when live ESPN data returns 0 (forced value is ignored if live data exists)
-  return live > 0 ? live : forced;
+  return livePts[p.n] || 0;
 }
-
-// R1 points override:
-// - Late Friday games ESPN returns as March 21 UTC (Missouri vs Miami ~10pm ET)
-const R1_FORCE = {
-  // Safety net for late Friday games where ET timezone fix may still have edge cases
-  "Mark Mitchell": 19,
-  "Jayden Stone": 21,
-  "Darryn Peterson": 28,
-  "Tre White": 12,
-};
 
 function getPlayerRoundCols(p) {
   const cols = [null, null, null, null, null, null];
@@ -292,11 +278,6 @@ function getPlayerRoundCols(p) {
   Object.entries(ROUND_TO_COL).forEach(([round, col]) => {
     if (rounds[round] !== undefined) cols[col] = rounds[round];
   });
-  // Force R1 for late Friday games mis-dated as March 21 UTC
-  if (R1_FORCE[p.n] !== undefined && cols[0] === null) {
-    cols[0] = R1_FORCE[p.n];
-    cols[1] = null; // clear any R2 that was wrongly assigned
-  }
   return cols;
 }
 
