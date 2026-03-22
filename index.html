@@ -275,7 +275,153 @@ function getPlayerRoundCols(p) {
   return cols;
 }
 
-2Fa.espncdn.com%2Fcombiner%2Fi%3Fimg%3D%2Fi%2Fheadshots%2Fmens-college-basketball%2Fplayers%2Ffull%2F${id}.png%26w%3D64%26h%3D64%26scale%3Dcrop&w=64&h=64&fit=cover&mask=circle&output=png`;
+// Schools that must NEVER be marked eliminated regardless of ESPN data
+const PROTECTED_SCHOOLS = ["tennessee","miami"];
+
+let livePts = {};
+let roundPts = {};
+let maxPts = {};
+let maxRoundPts = {};
+let liveGames = [];
+let elimIds = new Set();
+let elimSchools = new Set();
+let curTab = 'standings';
+let curTeam = null;
+
+function isEliminated(p) {
+  const sl = p.s.toLowerCase().trim();
+  if (PROTECTED_SCHOOLS.some(ps => sl === ps)) return false;
+  if (HARDCODED_ELIM.some(e => sl === e.toLowerCase().trim())) return true;
+  if (elimSchools.has(sl)) return true;
+  for (const e of elimSchools) {
+    if (e.startsWith(sl + ' ') || sl.startsWith(e + ' ')) return true;
+    if (e === sl) return true;
+  }
+  return false;
+}
+
+function teamTotal(t) { return t.players.reduce((s,p) => s + getPlayerPts(p), 0); }
+
+// ── ESPN FETCH ────────────────────────────────────────────────────────────────
+const TOURNEY_DATES = ['2026-03-18','2026-03-19','2026-03-20','2026-03-21','2026-03-22','2026-03-23','2026-03-26','2026-03-27','2026-03-28','2026-03-29','2026-04-04','2026-04-06'];
+
+async function fetchAll() {
+  try {
+    const allEvents = [];
+    await Promise.all(TOURNEY_DATES.map(async d => {
+      const dateParam = d.replace(/-/g,'');
+      const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?groups=100&seasontype=3&limit=100&dates=${dateParam}&_=${Date.now()}`;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+        (data.events || []).forEach(e => { e._fetchDate = d; allEvents.push(e); });
+      } catch(e) {}
+    }));
+
+    const isTourney = g => {
+      const notes = g.notes || [];
+      const name = (g.name || '').toLowerCase();
+      return notes.some(n => (n.headline||'').toLowerCase().includes('championship') || (n.headline||'').toLowerCase().includes('ncaa')) ||
+             name.includes('ncaa') ||
+             (g.competitions||[]).some(c => (c.competitors||[]).some(t => t.seed));
+    };
+
+    const gameRoundMap = {};
+    allEvents.filter(isTourney).forEach(g => {
+      const dateStr = g._fetchDate;
+      const round = getRoundForDate(dateStr);
+      if (round) gameRoundMap[g.id] = round;
+    });
+
+    const newLivePts = {};
+    const newRoundPts = {};
+    const newElimIds = new Set();
+    const newElimSchools = new Set();
+    const games = [];
+
+    await Promise.all(
+      allEvents.filter(g => isTourney(g) && !BLOCKED_GAME_IDS.has(g.id)).map(async g => {
+        const comp = (g.competitions||[])[0];
+        if (!comp) return;
+        const status = comp.status?.type?.name || '';
+        const isLive = status === 'STATUS_IN_PROGRESS';
+        const isFinal = status === 'STATUS_FINAL';
+        if (!isLive && !isFinal) {
+          games.push({g, isLive:false, isFinal:false, comp});
+          return;
+        }
+        if (isFinal) {
+          (comp.competitors||[]).forEach(team => {
+            const isWinner = team.winner === true;
+            if (!isWinner) {
+              if (team.team?.id) newElimIds.add(team.team.id);
+              const loc = team.team?.location?.toLowerCase();
+              const name = team.team?.name?.toLowerCase();
+              const display = team.team?.displayName?.toLowerCase();
+              if (loc) newElimSchools.add(loc);
+              if (name) newElimSchools.add(name);
+              if (display) newElimSchools.add(display);
+            }
+          });
+        }
+        try {
+          const burl = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary?event=${g.id}&_=${Date.now()}`;
+          const bres = await fetch(burl);
+          if (!bres.ok) return;
+          const bdata = await bres.json();
+          const round = gameRoundMap[g.id];
+          (bdata.boxscore?.players||[]).forEach(teamPlayers => {
+            (teamPlayers.statistics||[]).forEach(statGroup => {
+              (statGroup.athletes||[]).forEach(ath => {
+                const espnName = ath.athlete?.displayName;
+                const pname = matchPlayer(espnName);
+                if (!pname) return;
+                const stats = ath.stats || [];
+                const pts = parseInt(stats[1]) || 0;
+                const mins = stats[0] || '0';
+                const didPlay = mins !== '0:00' && mins !== '0' && mins !== '';
+                if (didPlay || isFinal) {
+                  newLivePts[pname] = (newLivePts[pname] || 0) + pts;
+                  if (round) {
+                    if (!newRoundPts[pname]) newRoundPts[pname] = {};
+                    newRoundPts[pname][round] = (newRoundPts[pname][round] || 0) + pts;
+                  }
+                }
+              });
+            });
+          });
+          games.push({g, isLive, isFinal, comp});
+        } catch(e) {}
+      })
+    );
+
+    // High water mark — scores never go down
+    Object.keys(newLivePts).forEach(n => {
+      maxPts[n] = Math.max(maxPts[n]||0, newLivePts[n]);
+    });
+    Object.keys(newRoundPts).forEach(n => {
+      if (!maxRoundPts[n]) maxRoundPts[n] = {};
+      Object.keys(newRoundPts[n]).forEach(r => {
+        maxRoundPts[n][r] = Math.max(maxRoundPts[n][r]||0, newRoundPts[n][r]);
+      });
+    });
+
+    livePts = { ...maxPts };
+    roundPts = { ...maxRoundPts };
+    elimIds = newElimIds;
+    elimSchools = newElimSchools;
+    liveGames = games;
+    document.getElementById('lupd').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch(e) {
+    document.getElementById('lupd').textContent = 'Error: ' + e.message;
+  }
+  renderAll();
+}
+
+function img(id) {
+  if (!id) return null;
+  return `https://wsrv.nl/?url=https%3A%2F%2Fa.espncdn.com%2Fcombiner%2Fi%3Fimg%3D%2Fi%2Fheadshots%2Fmens-college-basketball%2Fplayers%2Ffull%2F${id}.png%26w%3D64%26h%3D64%26scale%3Dcrop&w=64&h=64&fit=cover&mask=circle&output=png`;
 }
 function ini(n) { return n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join(''); }
 function avt(p, sz=34, showX=false) {
