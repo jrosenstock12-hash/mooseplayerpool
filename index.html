@@ -256,6 +256,7 @@ let curTeam = null;
 // e.g. { "Jaron Pierre Jr.": { 0: 18 } } means R1 = 18
 let adminOverrides = {};
 let adminUnlocked = false;
+let adminShowEdited = false;
 const ADMIN_PASSWORD = 'moose2026';
 
 // Load overrides from persistent storage
@@ -690,7 +691,11 @@ function renderAdmin() {
   const allPlayers = [];
   TEAMS.forEach(t => t.players.forEach(p => allPlayers.push({p, owner: t.name})));
   const search = (document.getElementById('admin-search')?.value || '').toLowerCase();
-  const filtered = search ? allPlayers.filter(({p}) => p.n.toLowerCase().includes(search) || p.s.toLowerCase().includes(search)) : allPlayers;
+  const filtered = allPlayers.filter(({p}) => {
+    const matchSearch = !search || p.n.toLowerCase().includes(search) || p.s.toLowerCase().includes(search);
+    const matchEdited = !adminShowEdited || (adminOverrides[p.n] && Object.keys(adminOverrides[p.n]).length > 0);
+    return matchSearch && matchEdited;
+  });
 
   const rounds = ['R1','R2','R3','R4','R5','R6'];
 
@@ -728,9 +733,9 @@ function renderAdmin() {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
         <div style="font-size:18px;font-weight:700">⚙️ Admin — Score Overrides</div>
         <div style="display:flex;gap:8px;align-items:center">
-          <button onclick="adminResetAll()"
-            style="font-size:12px;padding:5px 12px;border-radius:8px;background:var(--sur2);border:1px solid var(--bd2);color:#e05;cursor:pointer">
-            Reset All
+          <button onclick="adminShowEdited=!adminShowEdited;renderAdmin()"
+            style="font-size:12px;padding:5px 12px;border-radius:8px;background:${adminShowEdited?'var(--ac)':'var(--sur2)'};border:1px solid ${adminShowEdited?'var(--ac)':'var(--bd2)'};color:${adminShowEdited?'#fff':'var(--fg)'};cursor:pointer">
+            ✏️ Edited
           </button>
           <button onclick="adminLock()"
             style="font-size:12px;padding:5px 12px;border-radius:8px;background:var(--sur2);border:1px solid var(--bd2);color:var(--mu);cursor:pointer">
@@ -739,7 +744,7 @@ function renderAdmin() {
         </div>
       </div>
       <div style="color:var(--mu);font-size:12px;margin-bottom:14px">
-        Enter a value to override ESPN data for that round. Leave blank to use ESPN data. ✏️ = override active.
+        Enter a value to override ESPN data for that round. Leave blank to use ESPN data. Tap ✏️ Edited to filter to overridden players only.
       </div>
       <input id="admin-search" type="text" placeholder="🔍 Search player or school..."
         style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:10px;border:1px solid var(--bd2);background:var(--sur);color:var(--fg);font-size:14px;margin-bottom:16px"
@@ -814,12 +819,7 @@ async function adminClear(playerName) {
   renderAdmin();
 }
 
-async function adminResetAll() {
-  if (!confirm('Clear ALL admin overrides? This cannot be undone.')) return;
-  adminOverrides = {};
-  await saveOverrides();
-  renderAdmin();
-}
+
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 async function manualRefresh() {
