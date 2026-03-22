@@ -286,8 +286,13 @@ function getRoundForDate(dateStr) {
   return null;
 }
 
+function normalizeSchool(s) {
+  // Normalize curly/smart apostrophes to straight apostrophe (handles "St. John's" variants)
+  return s.toLowerCase().trim().replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'");
+}
+
 function isEliminated(p) {
-  const sl = p.s.toLowerCase().trim();
+  const sl = normalizeSchool(p.s);
   // Never eliminate protected schools (avoid Tennessee State / Miami OH confusion)
   if (PROTECTED_SCHOOLS.includes(sl)) return false;
   // First Four losers never made the real tournament
@@ -397,7 +402,10 @@ async function fetchAll() {
             // Add multiple name variants so roster school names match
             [t.location, t.name, t.shortDisplayName, t.abbreviation]
               .filter(Boolean)
-              .forEach(n => newElimSchools.add(n.toLowerCase().trim()));
+              .forEach(n => {
+                const norm = n.toLowerCase().trim().replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'");
+                newElimSchools.add(norm);
+              });
           }
         });
       }
