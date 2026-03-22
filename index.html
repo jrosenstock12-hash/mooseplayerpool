@@ -244,6 +244,13 @@ const PROTECTED_SCHOOLS = []; // no protected schools needed - all potential con
 // Their players are always eliminated and scored 0 tournament points
 const FIRST_FOUR_LOSERS = ['smu', 'nc state'];
 
+// Hardcoded R1 scores for First Four losers — permanent, never changes
+const FIRST_FOUR_PTS = {
+  "Jaron Pierre Jr.": 18,
+  "Boopie Miller":    15,
+  "Quadir Copeland":  16,
+};
+
 // State
 let livePts = {};      // { playerName: totalPts }
 let roundPts = {};     // { playerName: { 'Round of 64': pts, 'Round of 32': pts, ... } }
@@ -259,16 +266,16 @@ let adminUnlocked = false;
 let adminShowEdited = false;
 const ADMIN_PASSWORD = 'moose2026';
 
-// Load overrides from persistent storage — called before first render
+// Load overrides from localStorage — persists across refreshes on same device
 async function loadOverrides() {
   try {
-    const saved = await window.storage.get('admin-overrides');
-    if (saved) adminOverrides = JSON.parse(saved.value);
+    const saved = localStorage.getItem('moose-admin-overrides');
+    if (saved) adminOverrides = JSON.parse(saved);
   } catch(_) {}
 }
 
 async function saveOverrides() {
-  try { await window.storage.set('admin-overrides', JSON.stringify(adminOverrides)); } catch(_) {}
+  try { localStorage.setItem('moose-admin-overrides', JSON.stringify(adminOverrides)); } catch(_) {}
 }
 
 function getRoundForDate(dateStr) {
@@ -290,26 +297,34 @@ function isEliminated(p) {
 }
 
 function getPlayerPts(p) {
+  // Admin override takes priority over everything
   if (adminOverrides[p.n]) {
-    // Sum all overridden rounds
     return Object.values(adminOverrides[p.n]).reduce((s, v) => s + (parseInt(v) || 0), 0);
   }
+  // Hardcoded First Four losers
+  if (FIRST_FOUR_PTS[p.n] !== undefined) return FIRST_FOUR_PTS[p.n];
   return livePts[p.n] || 0;
 }
 
 function getPlayerRoundCols(p) {
   const cols = [null, null, null, null, null, null];
+  // Admin override takes priority
   if (adminOverrides[p.n]) {
-    // Use admin overrides — keyed by col index (0-5)
     Object.entries(adminOverrides[p.n]).forEach(([col, val]) => {
       cols[parseInt(col)] = parseInt(val) || 0;
     });
-  } else {
-    const rounds = roundPts[p.n] || {};
-    Object.entries(ROUND_TO_COL).forEach(([round, col]) => {
-      if (rounds[round] !== undefined) cols[col] = rounds[round];
-    });
+    return cols;
   }
+  // Hardcoded First Four losers — R1 only, always eliminated
+  if (FIRST_FOUR_PTS[p.n] !== undefined) {
+    cols[0] = FIRST_FOUR_PTS[p.n];
+    return cols;
+  }
+  // ESPN data
+  const rounds = roundPts[p.n] || {};
+  Object.entries(ROUND_TO_COL).forEach(([round, col]) => {
+    if (rounds[round] !== undefined) cols[col] = rounds[round];
+  });
   return cols;
 }
 
