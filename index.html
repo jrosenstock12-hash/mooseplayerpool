@@ -99,12 +99,14 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--sur)}
   <button class="tb" onclick="showTab('players')">👤 Players</button>
   <button class="tb" onclick="showTab('scores')">🏀 Scores</button>
   <button class="tb" onclick="showTab('draft')">📋 Draft</button>
+  <button class="tb" onclick="showTab('admin')">⚙️ Admin</button>
 </nav>
 <main>
   <div id="tab-standings" class="tp on"></div>
   <div id="tab-players" class="tp"></div>
   <div id="tab-scores" class="tp"></div>
   <div id="tab-draft" class="tp"></div>
+  <div id="tab-admin" class="tp"></div>
 </main>
 
 
@@ -250,6 +252,24 @@ let liveGames = [];    // all games for scores tab
 let curTab = 'standings';
 let curTeam = null;
 
+// Admin overrides: { playerName: { colIndex: points } }
+// e.g. { "Jaron Pierre Jr.": { 0: 18 } } means R1 = 18
+let adminOverrides = {};
+let adminUnlocked = false;
+const ADMIN_PASSWORD = 'moose2026';
+
+// Load overrides from persistent storage
+(async () => {
+  try {
+    const saved = await window.storage.get('admin-overrides');
+    if (saved) adminOverrides = JSON.parse(saved.value);
+  } catch(_) {}
+})();
+
+async function saveOverrides() {
+  try { await window.storage.set('admin-overrides', JSON.stringify(adminOverrides)); } catch(_) {}
+}
+
 function getRoundForDate(dateStr) {
   const d = dateStr ? dateStr.substring(0, 10) : '';
   for (const [round, dates] of Object.entries(ROUND_DATES)) {
@@ -269,15 +289,26 @@ function isEliminated(p) {
 }
 
 function getPlayerPts(p) {
+  if (adminOverrides[p.n]) {
+    // Sum all overridden rounds
+    return Object.values(adminOverrides[p.n]).reduce((s, v) => s + (parseInt(v) || 0), 0);
+  }
   return livePts[p.n] || 0;
 }
 
 function getPlayerRoundCols(p) {
   const cols = [null, null, null, null, null, null];
-  const rounds = roundPts[p.n] || {};
-  Object.entries(ROUND_TO_COL).forEach(([round, col]) => {
-    if (rounds[round] !== undefined) cols[col] = rounds[round];
-  });
+  if (adminOverrides[p.n]) {
+    // Use admin overrides — keyed by col index (0-5)
+    Object.entries(adminOverrides[p.n]).forEach(([col, val]) => {
+      cols[parseInt(col)] = parseInt(val) || 0;
+    });
+  } else {
+    const rounds = roundPts[p.n] || {};
+    Object.entries(ROUND_TO_COL).forEach(([round, col]) => {
+      if (rounds[round] !== undefined) cols[col] = rounds[round];
+    });
+  }
   return cols;
 }
 
@@ -419,7 +450,8 @@ function renderAll() {
   }
   else if (curTab==='players') renderPlayers();
   else if (curTab==='scores') renderScores();
-  else renderDraft();
+  else if (curTab==='draft') renderDraft();
+  else if (curTab==='admin') renderAdmin();
 }
 
 function showTab(tab) {
@@ -427,7 +459,7 @@ function showTab(tab) {
   if (tab === 'standings') curTeam = null;
   document.querySelectorAll('.tp').forEach(p => p.classList.remove('on'));
   document.getElementById('tab-'+tab).classList.add('on');
-  document.querySelectorAll('.tb').forEach((b,i) => b.classList.toggle('on', ['standings','players','scores','draft'][i]===tab));
+  document.querySelectorAll('.tb').forEach((b,i) => b.classList.toggle('on', ['standings','players','scores','draft','admin'][i]===tab));
   renderAll();
 }
 
@@ -630,6 +662,163 @@ function renderDraft() {
     h+='</div>';
   });
   document.getElementById('tab-draft').innerHTML = h+'</div>';
+}
+
+
+// ── ADMIN ─────────────────────────────────────────────────────────────────────
+function renderAdmin() {
+  const el = document.getElementById('tab-admin');
+
+  if (!adminUnlocked) {
+    el.innerHTML = `
+      <div style="max-width:340px;margin:60px auto;text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">⚙️ Admin</div>
+        <div style="color:var(--mu);margin-bottom:24px;font-size:14px">Enter password to manage player scores</div>
+        <input id="admin-pw" type="password" placeholder="Password"
+          style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:10px;border:1px solid var(--bd2);background:var(--sur);color:var(--fg);font-size:15px;margin-bottom:10px"
+          onkeydown="if(event.key==='Enter') adminLogin()">
+        <button onclick="adminLogin()"
+          style="width:100%;padding:11px;border-radius:10px;background:var(--ac);color:#fff;border:none;font-size:15px;font-weight:600;cursor:pointer">
+          Unlock
+        </button>
+        <div id="admin-err" style="color:#e05;margin-top:10px;font-size:13px"></div>
+      </div>`;
+    return;
+  }
+
+  // Build all players list for search
+  const allPlayers = [];
+  TEAMS.forEach(t => t.players.forEach(p => allPlayers.push({p, owner: t.name})));
+  const search = (document.getElementById('admin-search')?.value || '').toLowerCase();
+  const filtered = search ? allPlayers.filter(({p}) => p.n.toLowerCase().includes(search) || p.s.toLowerCase().includes(search)) : allPlayers;
+
+  const rounds = ['R1','R2','R3','R4','R5','R6'];
+
+  let rows = filtered.map(({p, owner}) => {
+    const ov = adminOverrides[p.n] || {};
+    const hasOverride = Object.keys(ov).length > 0;
+    const inputs = rounds.map((r, i) => {
+      const val = ov[i] !== undefined ? ov[i] : '';
+      const espn = (() => { const c=getPlayerRoundColsESPN(p); return c[i]!==null?c[i]:''; })();
+      return `<td style="padding:4px 3px">
+        <input type="number" min="0" max="99"
+          style="width:44px;padding:5px 4px;border-radius:6px;border:1px solid ${ov[i]!==undefined?'var(--ac)':'var(--bd2)'};background:var(--sur);color:var(--fg);font-size:13px;text-align:center"
+          placeholder="${espn}"
+          value="${val}"
+          onchange="adminSetPts('${p.n.replace(/'/g,"\'")}', ${i}, this.value)"
+          title="${ov[i]!==undefined?'Override active — ESPN value: '+espn:'ESPN value: '+espn}">
+      </td>`;
+    }).join('');
+
+    return `<tr style="border-bottom:1px solid var(--bd1)">
+      <td style="padding:8px 6px">
+        <div style="font-weight:600;font-size:13px">${p.n}${hasOverride?` <span style="color:var(--ac);font-size:11px">✏️</span>`:''}</div>
+        <div style="color:var(--mu);font-size:11px">${p.s} · ${owner}</div>
+      </td>
+      ${inputs}
+      <td style="padding:4px 6px">
+        ${hasOverride ? `<button onclick="adminClear('${p.n.replace(/'/g,"\'")}')}"
+          style="font-size:11px;padding:3px 8px;border-radius:6px;background:var(--sur2);border:1px solid var(--bd2);color:var(--mu);cursor:pointer">Clear</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="padding:0 0 80px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:18px;font-weight:700">⚙️ Admin — Score Overrides</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="adminResetAll()"
+            style="font-size:12px;padding:5px 12px;border-radius:8px;background:var(--sur2);border:1px solid var(--bd2);color:#e05;cursor:pointer">
+            Reset All
+          </button>
+          <button onclick="adminLock()"
+            style="font-size:12px;padding:5px 12px;border-radius:8px;background:var(--sur2);border:1px solid var(--bd2);color:var(--mu);cursor:pointer">
+            Lock
+          </button>
+        </div>
+      </div>
+      <div style="color:var(--mu);font-size:12px;margin-bottom:14px">
+        Enter a value to override ESPN data for that round. Leave blank to use ESPN data. ✏️ = override active.
+      </div>
+      <input id="admin-search" type="text" placeholder="🔍 Search player or school..."
+        style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:10px;border:1px solid var(--bd2);background:var(--sur);color:var(--fg);font-size:14px;margin-bottom:16px"
+        oninput="renderAdmin()">
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="color:var(--mu);font-size:11px;border-bottom:1px solid var(--bd2)">
+              <th style="text-align:left;padding:6px 6px;font-weight:600">PLAYER</th>
+              <th style="padding:6px 3px">R1</th>
+              <th style="padding:6px 3px">R2</th>
+              <th style="padding:6px 3px">R3</th>
+              <th style="padding:6px 3px">R4</th>
+              <th style="padding:6px 3px">R5</th>
+              <th style="padding:6px 3px">R6</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  // Restore search focus
+  const si = document.getElementById('admin-search');
+  if (si && search) { si.value = search; si.setSelectionRange(search.length, search.length); }
+}
+
+function getPlayerRoundColsESPN(p) {
+  // Raw ESPN data without overrides — for showing as placeholder
+  const cols = [null, null, null, null, null, null];
+  const rounds = roundPts[p.n] || {};
+  Object.entries(ROUND_TO_COL).forEach(([round, col]) => {
+    if (rounds[round] !== undefined) cols[col] = rounds[round];
+  });
+  return cols;
+}
+
+function adminLogin() {
+  const pw = document.getElementById('admin-pw')?.value || '';
+  if (pw === ADMIN_PASSWORD) {
+    adminUnlocked = true;
+    renderAdmin();
+  } else {
+    document.getElementById('admin-err').textContent = 'Incorrect password. Try again.';
+  }
+}
+
+function adminLock() {
+  adminUnlocked = false;
+  renderAdmin();
+}
+
+async function adminSetPts(playerName, colIndex, value) {
+  const val = value.trim();
+  if (!adminOverrides[playerName]) adminOverrides[playerName] = {};
+  if (val === '' || val === null) {
+    delete adminOverrides[playerName][colIndex];
+    if (Object.keys(adminOverrides[playerName]).length === 0) delete adminOverrides[playerName];
+  } else {
+    adminOverrides[playerName][colIndex] = parseInt(val) || 0;
+  }
+  await saveOverrides();
+  // Re-render all tabs to reflect the change
+  if (curTab === 'admin') renderAdmin();
+  else renderAll();
+}
+
+async function adminClear(playerName) {
+  delete adminOverrides[playerName];
+  await saveOverrides();
+  renderAdmin();
+}
+
+async function adminResetAll() {
+  if (!confirm('Clear ALL admin overrides? This cannot be undone.')) return;
+  adminOverrides = {};
+  await saveOverrides();
+  renderAdmin();
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
