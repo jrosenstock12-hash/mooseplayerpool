@@ -238,7 +238,7 @@ const ROUND_TO_COL = {
 };
 
 // Schools protected from auto-elimination (avoids Miami OH / Tennessee State confusion)
-const PROTECTED_SCHOOLS = ['tennessee', 'miami'];
+const PROTECTED_SCHOOLS = []; // no protected schools needed - all potential conflicts already eliminated
 
 // Teams that lost in the First Four — never made the Round of 64
 // Their players are always eliminated and scored 0 tournament points
@@ -259,13 +259,13 @@ let adminUnlocked = false;
 let adminShowEdited = false;
 const ADMIN_PASSWORD = 'moose2026';
 
-// Load overrides from persistent storage
-(async () => {
+// Load overrides from persistent storage — called before first render
+async function loadOverrides() {
   try {
     const saved = await window.storage.get('admin-overrides');
     if (saved) adminOverrides = JSON.parse(saved.value);
   } catch(_) {}
-})();
+}
 
 async function saveOverrides() {
   try { await window.storage.set('admin-overrides', JSON.stringify(adminOverrides)); } catch(_) {}
@@ -830,9 +830,13 @@ async function manualRefresh() {
   btn.textContent = '↻ Refresh';
   btn.style.opacity = '1';
 }
-renderAll();
-fetchAll();
-setInterval(fetchAll, 30000);
+// Load overrides first, then render and start fetching
+(async () => {
+  await loadOverrides();
+  renderAll();
+  fetchAll();
+  setInterval(fetchAll, 30000);
+})();
 </script>
 </body>
 </html>
