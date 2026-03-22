@@ -215,21 +215,9 @@ function matchPlayer(espnName) {
 }
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
-// Hardcoded First Four points (these never change)
-const HARDCODED_PTS = {
-  // DNP R1 active players - hardcode 0 so live R2+ points land in correct column
-  "Patrick Ngongba II": 0, "Silas Demary Jr.": 0, "Tyler Bilodeau": 0, "Mikel Brown Jr.": 0,
-};
-// Game IDs that are scheduled for future dates - never fetch box scores for these
-// These will be removed as games are played
-const BLOCKED_GAME_IDS = new Set([]);
-// Hardcoded eliminations for First Four losers (not in ESPN tournament data)
-const HARDCODED_ELIM = ["NC State", "SMU", "South Florida", "Wisconsin", "Ohio State", "Troy", "Saint Mary's", "Georgia", "North Carolina", "Cal Baptist", "McNeese", "Hofstra"];
-// NCAA Tournament rounds in order — index 0 = R1, index 1 = R2, etc.
-// First Four counts as R1 for those players; everyone else starts at R1 = Round of 64
-const ROUND_ORDER = ['First Four','Round of 64','Round of 32','Sweet 16','Elite Eight','Final Four','Championship'];
+
+// Round dates — tells us which round each game belongs to
 const ROUND_DATES = {
-  'First Four':    ['2026-03-18','2026-03-19'],
   'Round of 64':   ['2026-03-19','2026-03-20','2026-03-21'],
   'Round of 32':   ['2026-03-22','2026-03-23'],
   'Sweet 16':      ['2026-03-26','2026-03-27'],
@@ -237,193 +225,159 @@ const ROUND_DATES = {
   'Final Four':    ['2026-04-04'],
   'Championship':  ['2026-04-06'],
 };
+
+// First Four dates — separate so we don't double-count with Round of 64
+const FIRST_FOUR_DATES = ['2026-03-18','2026-03-19'];
+
+// All tournament dates to fetch
+const TOURNEY_DATES = ['2026-03-19','2026-03-20','2026-03-21','2026-03-22','2026-03-23','2026-03-26','2026-03-27','2026-03-28','2026-03-29','2026-04-04','2026-04-06'];
+
+// Column index for each round (R1=0, R2=1, etc.)
+const ROUND_TO_COL = {
+  'Round of 64': 0, 'Round of 32': 1, 'Sweet 16': 2,
+  'Elite Eight': 3, 'Final Four': 4, 'Championship': 5
+};
+
+// Schools protected from auto-elimination (avoids Miami OH / Tennessee State confusion)
+const PROTECTED_SCHOOLS = ['tennessee', 'miami'];
+
+// First Four losers — manually tracked since we skip those dates
+const FIRST_FOUR_ELIM = ['nc state', 'smu'];
+
+// State
+let livePts = {};      // { playerName: totalPts }
+let roundPts = {};     // { playerName: { 'Round of 64': pts, 'Round of 32': pts, ... } }
+let elimSchools = new Set();  // schools eliminated by live feed
+let liveGames = [];    // all games for scores tab
+let curTab = 'standings';
+let curTeam = null;
+
 function getRoundForDate(dateStr) {
-  const d = dateStr ? dateStr.substring(0,10) : '';
+  const d = dateStr ? dateStr.substring(0, 10) : '';
   for (const [round, dates] of Object.entries(ROUND_DATES)) {
     if (dates.includes(d)) return round;
   }
   return null;
 }
-// Get a player's pts indexed by R1-R6 (chronological games played)
+
+function isEliminated(p) {
+  const sl = p.s.toLowerCase().trim();
+  // Never eliminate protected schools (avoids false positives)
+  if (PROTECTED_SCHOOLS.includes(sl)) return false;
+  // First Four losers
+  if (FIRST_FOUR_ELIM.includes(sl)) return true;
+  // Live feed eliminations
+  if (elimSchools.has(sl)) return true;
+  // Partial match (e.g. "ohio state" matches "ohio state buckeyes")
+  for (const e of elimSchools) {
+    if (e === sl || e.startsWith(sl + ' ') || sl.startsWith(e + ' ')) return true;
+  }
+  return false;
+}
+
 function getPlayerPts(p) {
   return livePts[p.n] || 0;
 }
 
 function getPlayerRoundCols(p) {
-  const roundToCol = {
-    'First Four': 0, 'Round of 64': 0, 'Round of 32': 1,
-    'Sweet 16': 2, 'Elite Eight': 3, 'Final Four': 4, 'Championship': 5
-  };
-  const cols = [null,null,null,null,null,null];
+  const cols = [null, null, null, null, null, null];
   const rounds = roundPts[p.n] || {};
-
-  // Map live ESPN round data to correct columns
-  ROUND_ORDER.forEach(r => {
-    if (rounds[r] !== undefined) {
-      const col = roundToCol[r];
-      if (col !== undefined) cols[col] = (cols[col] === null ? 0 : cols[col]) + rounds[r];
-    }
+  Object.entries(ROUND_TO_COL).forEach(([round, col]) => {
+    if (rounds[round] !== undefined) cols[col] = rounds[round];
   });
-
-  // DNP R1 players: force R1=0, shift any ESPN R1 data to R2
-  if (HARDCODED_PTS[p.n] !== undefined) {
-    const liveR1 = cols[0];
-    cols[0] = 0;
-    if (liveR1 !== null && liveR1 > 0 && cols[1] === null) cols[1] = liveR1;
-  }
-
   return cols;
 }
 
-// Schools that must NEVER be marked eliminated regardless of ESPN data
-const PROTECTED_SCHOOLS = ["tennessee","miami"];
-
-let livePts = {};
-let roundPts = {};
-let maxPts = {};
-let maxRoundPts = {};
-let liveGames = [];
-let elimIds = new Set();
-let elimSchools = new Set();
-let curTab = 'standings';
-let curTeam = null;
-
-function isEliminated(p) {
-  const sl = p.s.toLowerCase().trim();
-  if (PROTECTED_SCHOOLS.some(ps => sl === ps)) return false;
-  if (HARDCODED_ELIM.some(e => sl === e.toLowerCase().trim())) return true;
-  if (elimSchools.has(sl)) return true;
-  for (const e of elimSchools) {
-    if (e.startsWith(sl + ' ') || sl.startsWith(e + ' ')) return true;
-    if (e === sl) return true;
-  }
-  return false;
+function teamTotal(t) {
+  return t.players.reduce((s, p) => s + getPlayerPts(p), 0);
 }
 
-function teamTotal(t) { return t.players.reduce((s,p) => s + getPlayerPts(p), 0); }
-
 // ── ESPN FETCH ────────────────────────────────────────────────────────────────
-const TOURNEY_DATES = ['2026-03-18','2026-03-19','2026-03-20','2026-03-21','2026-03-22','2026-03-23','2026-03-26','2026-03-27','2026-03-28','2026-03-29','2026-04-04','2026-04-06'];
-
 async function fetchAll() {
   try {
+    // Step 1: fetch all tournament game IDs and their dates
     const allEvents = [];
     await Promise.all(TOURNEY_DATES.map(async d => {
-      const dateParam = d.replace(/-/g,'');
-      const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?groups=100&seasontype=3&limit=100&dates=${dateParam}&_=${Date.now()}`;
+      const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?groups=100&seasontype=3&limit=100&dates=${d.replace(/-/g,'')}&_=${Date.now()}`;
       try {
         const res = await fetch(url);
         if (!res.ok) return;
         const data = await res.json();
-        (data.events || []).forEach(e => { e._fetchDate = d; allEvents.push(e); });
+        (data.events || []).forEach(e => { e._date = d; allEvents.push(e); });
       } catch(e) {}
     }));
 
-    const gameRoundMap = {};
-    allEvents.forEach(g => {
-      const dateStr = g._fetchDate;
-      const round = getRoundForDate(dateStr);
-      if (round) gameRoundMap[g.id] = round;
-    });
-
     const newLivePts = {};
     const newRoundPts = {};
-    const newElimIds = new Set();
     const newElimSchools = new Set();
     const games = [];
 
-    await Promise.all(
-      allEvents.filter(g => !BLOCKED_GAME_IDS.has(g.id)).map(async g => {
-        const comp = (g.competitions||[])[0];
-        if (!comp) return;
-        const status = comp.status?.type?.name || '';
-        const isLive = status === 'STATUS_IN_PROGRESS';
-        const isFinal = status === 'STATUS_FINAL';
-        if (!isLive && !isFinal) {
-          games.push({g, isLive:false, isFinal:false, comp});
-          return;
-        }
-        if (isFinal) {
-          (comp.competitors||[]).forEach(team => {
-            const isWinner = team.winner === true;
-            if (!isWinner) {
-              if (team.team?.id) newElimIds.add(team.team.id);
-              const loc = team.team?.location?.toLowerCase();
-              const name = team.team?.name?.toLowerCase();
-              const display = team.team?.displayName?.toLowerCase();
-              if (loc) newElimSchools.add(loc);
-              if (name) newElimSchools.add(name);
-              if (display) newElimSchools.add(display);
-            }
-          });
-        }
-        games.push({g, isLive, isFinal, comp});
-        try {
-          const burl = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary?event=${g.id}&_=${Date.now()}`;
-          const bres = await fetch(burl);
-          if (!bres.ok) return;
-          const bdata = await bres.json();
-          const round = gameRoundMap[g.id];
-          (bdata.boxscore?.players||[]).forEach(teamPlayers => {
-            (teamPlayers.statistics||[]).forEach(statGroup => {
-              (statGroup.athletes||[]).forEach(ath => {
-                const espnName = ath.athlete?.displayName;
-                const player = matchPlayer(espnName);
-                if (!player) return;
-                const pname = player.n;
-                const stats = ath.stats || [];
-                const pts = parseInt(stats[1]) || 0;
-                const mins = stats[0] || '0';
-                const didPlay = mins !== '0:00' && mins !== '0' && mins !== '';
-                if (didPlay || isFinal) {
-                  newLivePts[pname] = (newLivePts[pname] || 0) + pts;
-                  if (round) {
-                    if (!newRoundPts[pname]) newRoundPts[pname] = {};
-                    newRoundPts[pname][round] = (newRoundPts[pname][round] || 0) + pts;
-                  }
-                }
-              });
+    // Step 2: for each game, fetch box score and credit player points
+    await Promise.all(allEvents.map(async g => {
+      const comp = (g.competitions || [])[0];
+      if (!comp) return;
+
+      const status = comp.status?.type?.name || '';
+      const isFinal = status === 'STATUS_FINAL';
+      const isLive = status === 'STATUS_IN_PROGRESS';
+
+      // Always add to games list for scores tab
+      games.push(g);
+
+      // Track eliminations from final games
+      if (isFinal) {
+        (comp.competitors || []).forEach(team => {
+          if (!team.winner) {
+            const loc = team.team?.location?.toLowerCase();
+            const name = team.team?.name?.toLowerCase();
+            const display = team.team?.displayName?.toLowerCase();
+            if (loc) newElimSchools.add(loc);
+            if (name) newElimSchools.add(name);
+            if (display) newElimSchools.add(display);
+          }
+        });
+      }
+
+      // Only fetch box scores for live or completed games
+      if (!isFinal && !isLive) return;
+
+      const round = getRoundForDate(g._date);
+      if (!round) return; // skip if we don't know the round
+
+      try {
+        const burl = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary?event=${g.id}&_=${Date.now()}`;
+        const bres = await fetch(burl);
+        if (!bres.ok) return;
+        const bdata = await bres.json();
+
+        (bdata.boxscore?.players || []).forEach(teamSection => {
+          (teamSection.statistics || []).forEach(statGroup => {
+            (statGroup.athletes || []).forEach(ath => {
+              const player = matchPlayer(ath.athlete?.displayName);
+              if (!player) return;
+              const stats = ath.stats || [];
+              const pts = parseInt(stats[1]) || 0;
+              // Credit points — all players in box score get their points (0 if they didn't score)
+              newLivePts[player.n] = (newLivePts[player.n] || 0) + pts;
+              if (!newRoundPts[player.n]) newRoundPts[player.n] = {};
+              newRoundPts[player.n][round] = (newRoundPts[player.n][round] || 0) + pts;
             });
           });
-        } catch(e) {}
-      })
-    );
+        });
+      } catch(e) {}
+    }));
 
-    // High water mark — scores never go down
-    Object.keys(newLivePts).forEach(n => {
-      maxPts[n] = Math.max(maxPts[n]||0, newLivePts[n]);
-    });
-    Object.keys(newRoundPts).forEach(n => {
-      if (!maxRoundPts[n]) maxRoundPts[n] = {};
-      Object.keys(newRoundPts[n]).forEach(r => {
-        maxRoundPts[n][r] = Math.max(maxRoundPts[n][r]||0, newRoundPts[n][r]);
-      });
-    });
-
-    livePts = { ...maxPts };
-    roundPts = { ...maxRoundPts };
-    elimIds = newElimIds;
+    livePts = newLivePts;
+    roundPts = newRoundPts;
     elimSchools = newElimSchools;
     liveGames = games;
-    document.getElementById('lupd').textContent = 'Updated ' + new Date().toLocaleTimeString();
+
+    const ts = new Date().toLocaleTimeString();
+    document.getElementById('lupd').textContent = `Updated ${ts} | ${allEvents.length} games | ${Object.keys(newLivePts).length} players scored`;
   } catch(e) {
     document.getElementById('lupd').textContent = 'Error: ' + e.message;
   }
   renderAll();
-}
-
-function img(id) {
-  if (!id) return null;
-  return `https://wsrv.nl/?url=https%3A%2F%2Fa.espncdn.com%2Fcombiner%2Fi%3Fimg%3D%2Fi%2Fheadshots%2Fmens-college-basketball%2Fplayers%2Ffull%2F${id}.png%26w%3D64%26h%3D64%26scale%3Dcrop&w=64&h=64&fit=cover&mask=circle&output=png`;
-}
-function ini(n) { return n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join(''); }
-function avt(p, sz=34, showX=false) {
-  const u = img(p.id);
-  const initials = ini(p.n);
-  const xOverlay = showX ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(180,0,0,0.65);font-size:${Math.round(sz*0.45)}px;font-weight:900;color:#fff;pointer-events:none;">✕</div>` : '';
-  const imgTag = u ? `<img src="${u}" loading="lazy" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>` : '';
-  const iniDiv = `<div style="display:${u?'none':'flex'};width:100%;height:100%;border-radius:50%;background:#334;align-items:center;justify-content:center;font-size:${Math.round(sz*0.38)}px;font-weight:700;color:#8af;">${initials}</div>`;
-  return `<div class="av" style="width:${sz}px;height:${sz}px;position:relative;flex-shrink:0;">${imgTag}${iniDiv}${xOverlay}</div>`;
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
@@ -585,7 +539,8 @@ function renderScores() {
     return;
   }
   const fin=[],live=[],up=[];
-  liveGames.forEach(g => {
+  liveGames.forEach(item => {
+    const g = item.g || item;
     const st = g.status?.type?.name;
     const state = g.status?.type?.state;
     if (st==='STATUS_FINAL') fin.push(g);
