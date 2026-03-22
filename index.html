@@ -218,8 +218,8 @@ function matchPlayer(espnName) {
 
 // Round dates — tells us which round each game belongs to
 const ROUND_DATES = {
-  'Round of 64':   ['2026-03-19','2026-03-20','2026-03-21'],
-  'Round of 32':   ['2026-03-22','2026-03-23'],
+  'Round of 64':   ['2026-03-19','2026-03-20'],
+  'Round of 32':   ['2026-03-21','2026-03-22','2026-03-23'],
   'Sweet 16':      ['2026-03-26','2026-03-27'],
   'Elite Eight':   ['2026-03-28','2026-03-29'],
   'Final Four':    ['2026-04-04'],
@@ -303,9 +303,22 @@ async function fetchAll() {
         const res = await fetch(url);
         if (!res.ok) return;
         const data = await res.json();
-        (data.events || []).forEach(e => { e._date = d; allEvents.push(e); });
+        (data.events || []).forEach(e => {
+          // Use actual game date from ESPN, not fetch date
+          const gameDate = (e.competitions?.[0]?.date || e.date || d).substring(0, 10);
+          e._date = gameDate;
+          allEvents.push(e);
+        });
       } catch(e) {}
     }));
+
+    // Deduplicate events by game ID (same game can appear in multiple date fetches)
+    const seenIds = new Set();
+    const uniqueEvents = allEvents.filter(g => {
+      if (seenIds.has(g.id)) return false;
+      seenIds.add(g.id);
+      return true;
+    });
 
     const newLivePts = {};
     const newRoundPts = {};
@@ -313,7 +326,7 @@ async function fetchAll() {
     const games = [];
 
     // Step 2: for each game, fetch box score and credit player points
-    await Promise.all(allEvents.map(async g => {
+    await Promise.all(uniqueEvents.map(async g => {
       const comp = (g.competitions || [])[0];
       if (!comp) return;
 
@@ -372,9 +385,7 @@ async function fetchAll() {
     elimSchools = newElimSchools;
     liveGames = games;
 
-    const scoredNames = Object.keys(newLivePts).slice(0,3).join(', ');
-    const ts = new Date().toLocaleTimeString();
-    document.getElementById('lupd').textContent = `Updated ${ts} | ${allEvents.length} games | ${Object.keys(newLivePts).length} players scored | eg: ${scoredNames}`;
+    document.getElementById('lupd').textContent = 'Updated ' + new Date().toLocaleTimeString();
   } catch(e) {
     document.getElementById('lupd').textContent = 'Error: ' + e.message;
   }
