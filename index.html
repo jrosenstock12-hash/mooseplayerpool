@@ -490,6 +490,7 @@ function showTeam(oi) {
 }
 
 function renderPlayers() {
+  try {
   const all = [];
   TEAMS.forEach(t => t.players.forEach(p => all.push({p,owner:t.name,pts:getPlayerPts(p)})));
   all.sort((a,b)=>b.pts-a.pts);
@@ -528,6 +529,7 @@ function renderPlayers() {
     </tr>`;
   });
   document.getElementById('tab-players').innerHTML = h + '</tbody></table></div>';
+  } catch(e) { document.getElementById('tab-players').innerHTML = '<p style="color:red;padding:1rem">Error: ' + e.message + '</p>'; }
 }
 function filterP() {
   const q = (document.getElementById('psrch')?.value||'').toLowerCase();
