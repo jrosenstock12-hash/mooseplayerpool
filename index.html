@@ -238,6 +238,10 @@ const ROUND_TO_COL = {
 // Schools protected from auto-elimination (avoids Miami OH / Tennessee State confusion)
 const PROTECTED_SCHOOLS = ['tennessee', 'miami'];
 
+// Teams that lost in the First Four — never made the Round of 64
+// Their players are always eliminated and scored 0 tournament points
+const FIRST_FOUR_LOSERS = ['smu', 'nc state'];
+
 // State
 let livePts = {};      // { playerName: totalPts }
 let roundPts = {};     // { playerName: { 'Round of 64': pts, 'Round of 32': pts, ... } }
@@ -258,6 +262,8 @@ function isEliminated(p) {
   const sl = p.s.toLowerCase().trim();
   // Never eliminate protected schools (avoid Tennessee State / Miami OH confusion)
   if (PROTECTED_SCHOOLS.includes(sl)) return false;
+  // First Four losers never made the real tournament
+  if (FIRST_FOUR_LOSERS.includes(sl)) return true;
   // Exact match against ESPN location field (e.g. "kansas", "duke", "texas a&m")
   return elimSchools.has(sl);
 }
