@@ -313,8 +313,17 @@ async function fetchAll() {
           // Use game START time in ET to determine date (avoids UTC midnight bleed)
           const rawDate = e.competitions?.[0]?.date || e.date || d;
           let gameDate;
-          try { gameDate = new Date(rawDate).toLocaleDateString('en-CA', {timeZone:'America/New_York'}); }
-          catch(_) { gameDate = rawDate.substring(0, 10); }
+          try {
+            const dt = new Date(rawDate);
+            // Convert UTC to ET (UTC-5 standard, UTC-4 daylight — March is DST so UTC-4)
+            const ET_OFFSET_MS = 4 * 60 * 60 * 1000; // EDT = UTC-4
+            const etMs = dt.getTime() - ET_OFFSET_MS;
+            const etDate = new Date(etMs);
+            const y = etDate.getUTCFullYear();
+            const m = String(etDate.getUTCMonth() + 1).padStart(2, '0');
+            const dd = String(etDate.getUTCDate()).padStart(2, '0');
+            gameDate = `${y}-${m}-${dd}`;
+          } catch(_) { gameDate = rawDate.substring(0, 10); }
           e._date = gameDate;
           allEvents.push(e);
         });
@@ -346,12 +355,15 @@ async function fetchAll() {
       // Always add to games list for scores tab
       games.push(g);
 
-      // Track eliminations: for each final game, mark the loser by their location (e.g. "kansas")
+      // Track eliminations: for each final game, mark the loser
       if (isFinal) {
         (comp.competitors || []).forEach(team => {
           if (!team.winner) {
-            const loc = team.team?.location?.toLowerCase().trim();
-            if (loc) newElimSchools.add(loc);
+            const t = team.team || {};
+            // Add multiple name variants so roster school names match
+            [t.location, t.name, t.shortDisplayName, t.abbreviation]
+              .filter(Boolean)
+              .forEach(n => newElimSchools.add(n.toLowerCase().trim()));
           }
         });
       }
