@@ -382,6 +382,20 @@ async function fetchAll() {
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
+function img(id) {
+  if (!id) return null;
+  return `https://wsrv.nl/?url=https%3A%2F%2Fa.espncdn.com%2Fcombiner%2Fi%3Fimg%3D%2Fi%2Fheadshots%2Fmens-college-basketball%2Fplayers%2Ffull%2F${id}.png%26w%3D64%26h%3D64%26scale%3Dcrop&w=64&h=64&fit=cover&mask=circle&output=png`;
+}
+function ini(n) { return n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join(''); }
+function avt(p, sz=34, showX=false) {
+  const u = img(p.id);
+  const initials = ini(p.n);
+  const xOverlay = showX ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(180,0,0,0.65);font-size:${Math.round(sz*0.45)}px;font-weight:900;color:#fff;pointer-events:none;">✕</div>` : '';
+  const imgTag = u ? `<img src="${u}" loading="lazy" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>` : '';
+  const iniDiv = `<div style="display:${u?'none':'flex'};width:100%;height:100%;border-radius:50%;background:#334;align-items:center;justify-content:center;font-size:${Math.round(sz*0.38)}px;font-weight:700;color:#8af;">${initials}</div>`;
+  return `<div class="av" style="width:${sz}px;height:${sz}px;position:relative;flex-shrink:0;">${imgTag}${iniDiv}${xOverlay}</div>`;
+}
+
 function renderAll() {
   renderTicker();
   if (curTab==='standings') {
