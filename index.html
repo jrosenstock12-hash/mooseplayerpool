@@ -220,6 +220,7 @@ function matchPlayer(espnName) {
 
 // Round dates — tells us which round each game belongs to
 const ROUND_DATES = {
+  'First Four':    ['2026-03-17','2026-03-18'],
   'Round of 64':   ['2026-03-19','2026-03-20'],
   'Round of 32':   ['2026-03-21','2026-03-22'],
   'Sweet 16':      ['2026-03-26','2026-03-27'],
@@ -228,28 +229,26 @@ const ROUND_DATES = {
   'Championship':  ['2026-04-06'],
 };
 
-// All tournament dates to fetch
-const TOURNEY_DATES = ['2026-03-19','2026-03-20','2026-03-21','2026-03-22','2026-03-26','2026-03-27','2026-03-28','2026-03-29','2026-04-04','2026-04-06'];
+// All tournament dates to fetch (includes First Four)
+const TOURNEY_DATES = ['2026-03-17','2026-03-18','2026-03-19','2026-03-20','2026-03-21','2026-03-22','2026-03-26','2026-03-27','2026-03-28','2026-03-29','2026-04-04','2026-04-06'];
 
 // Column index for each round (R1=0, R2=1, etc.)
+// First Four is NOT a separate column:
+//   - Winners' First Four pts are discarded (they play on in R1, scored there normally)
+//   - Losers' First Four pts are folded into R1 col so they show up correctly
 const ROUND_TO_COL = {
   'Round of 64': 0, 'Round of 32': 1, 'Sweet 16': 2,
   'Elite Eight': 3, 'Final Four': 4, 'Championship': 5
 };
 
-// Schools protected from auto-elimination (avoids Miami OH / Tennessee State confusion)
-const PROTECTED_SCHOOLS = []; // no protected schools needed - all potential conflicts already eliminated
+// Schools protected from auto-elimination
+const PROTECTED_SCHOOLS = [];
 
-// Teams that lost in the First Four — never made the Round of 64
-// Their players are always eliminated and scored 0 tournament points
-const FIRST_FOUR_LOSERS = ['smu', 'nc state'];
+// First Four WINNERS — active in R1 but their First Four pts are discarded (avoid double-count)
+const FIRST_FOUR_WINNER_SCHOOLS = ['texas', 'miami (oh)', 'howard', 'prairie view'];
 
-// Hardcoded R1 scores for First Four losers — permanent, never changes
-const FIRST_FOUR_PTS = {
-  "Jaron Pierre Jr.": 18,
-  "Boopie Miller":    15,
-  "Quadir Copeland":  16,
-};
+// No hardcoded pts — First Four loser scores now come live from ESPN
+// SMU/NC State players: eliminated + their First Four pts folded into R1 col automatically
 
 // State
 let livePts = {};      // { playerName: totalPts }
@@ -293,11 +292,11 @@ function normalizeSchool(s) {
 
 function isEliminated(p) {
   const sl = normalizeSchool(p.s);
-  // Never eliminate protected schools (avoid Tennessee State / Miami OH confusion)
+  // Never eliminate protected schools
   if (PROTECTED_SCHOOLS.includes(sl)) return false;
-  // First Four losers never made the real tournament
-  if (FIRST_FOUR_LOSERS.includes(sl)) return true;
-  // Exact match against ESPN location field (e.g. "kansas", "duke", "texas a&m")
+  // First Four winners are NOT eliminated — they advanced to R1
+  if (FIRST_FOUR_WINNER_SCHOOLS.includes(sl)) return elimSchools.has(sl);
+  // Everyone else: eliminated if ESPN says they lost any game
   return elimSchools.has(sl);
 }
 
@@ -306,8 +305,7 @@ function getPlayerPts(p) {
   if (adminOverrides[p.n]) {
     return Object.values(adminOverrides[p.n]).reduce((s, v) => s + (parseInt(v) || 0), 0);
   }
-  // Hardcoded First Four losers
-  if (FIRST_FOUR_PTS[p.n] !== undefined) return FIRST_FOUR_PTS[p.n];
+  // Live ESPN data (includes First Four pts folded into R1 for losers)
   return livePts[p.n] || 0;
 }
 
@@ -320,12 +318,7 @@ function getPlayerRoundCols(p) {
     });
     return cols;
   }
-  // Hardcoded First Four losers — R1 only, always eliminated
-  if (FIRST_FOUR_PTS[p.n] !== undefined) {
-    cols[0] = FIRST_FOUR_PTS[p.n];
-    return cols;
-  }
-  // ESPN data
+  // ESPN data — First Four losers have their FF pts already folded into R1 by fetchAll
   const rounds = roundPts[p.n] || {};
   Object.entries(ROUND_TO_COL).forEach(([round, col]) => {
     if (rounds[round] !== undefined) cols[col] = rounds[round];
@@ -422,17 +415,27 @@ async function fetchAll() {
         if (!bres.ok) return;
         const bdata = await bres.json();
 
+        // For First Four games: determine which team WON so we know which players to discard
+        const ffWinnerTeamId = (round === 'First Four')
+          ? ((comp.competitors || []).find(c => c.winner)?.team?.id || null)
+          : null;
+
         (bdata.boxscore?.players || []).forEach(teamSection => {
+          // For First Four games, skip the WINNING team's players entirely
+          // (they play on in R1 and will score there — we don't want to double count)
+          if (ffWinnerTeamId && teamSection.team?.id === ffWinnerTeamId) return;
+
           (teamSection.statistics || []).forEach(statGroup => {
             (statGroup.athletes || []).forEach(ath => {
               const player = matchPlayer(ath.athlete?.displayName);
               if (!player) return;
               const stats = ath.stats || [];
               const pts = parseInt(stats[1]) || 0;
-              // Credit points — all players in box score get their points (0 if they didn't score)
+              // First Four LOSER pts fold into R1 column (not a separate column)
+              const creditRound = (round === 'First Four') ? 'Round of 64' : round;
               newLivePts[player.n] = (newLivePts[player.n] || 0) + pts;
               if (!newRoundPts[player.n]) newRoundPts[player.n] = {};
-              newRoundPts[player.n][round] = (newRoundPts[player.n][round] || 0) + pts;
+              newRoundPts[player.n][creditRound] = (newRoundPts[player.n][creditRound] || 0) + pts;
             });
           });
         });
