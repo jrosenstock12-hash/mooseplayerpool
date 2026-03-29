@@ -382,7 +382,7 @@ async function fetchAll() {
 
       const status = comp.status?.type?.name || '';
       const isFinal = status === 'STATUS_FINAL';
-      const isLive = status === 'STATUS_IN_PROGRESS';
+      const isLive = status === 'STATUS_IN_PROGRESS' || status === 'STATUS_HALFTIME';
 
       // Always add to games list for scores tab
       games.push(g);
