@@ -70,7 +70,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--sur)}
 .dp:last-child{border-bottom:none}
 .dn{font-size:11px;color:var(--mu);width:18px;font-family:'DM Mono',monospace;flex-shrink:0}
 .dna{font-size:13px;font-weight:500}.dsc{font-size:11px;color:var(--mu)}
-.dpt{font-family:'DM Mono',monospace;font-size:13px;color:var(--ac);font-weight:500;margin-left:auto;flex-shrink:0}
+.dpt{font-family:'DM Mono',monospace;font-size:13px;color:var(--tx);font-weight:500;margin-left:auto;flex-shrink:0}
 .back{background:var(--sur);border:1px solid var(--bd);color:var(--mu);font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 16px;border-radius:8px;cursor:pointer;margin-bottom:1.5rem}
 .sl{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin:1.5rem 0 10px}
 .sb input{width:100%;max-width:400px;background:var(--sur);border:1px solid var(--bd2);border-radius:8px;padding:10px 16px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;margin-bottom:1rem}
@@ -99,14 +99,14 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--sur)}
   <button class="tb" onclick="showTab('players')">👤 Players</button>
   <button class="tb" onclick="showTab('scores')">🏀 Scores</button>
   <button class="tb" onclick="showTab('draft')">📋 Draft</button>
-  <button class="tb" onclick="showTab('admin')">⚙️ Admin</button>
+
 </nav>
 <main>
   <div id="tab-standings" class="tp on"></div>
   <div id="tab-players" class="tp"></div>
   <div id="tab-scores" class="tp"></div>
   <div id="tab-draft" class="tp"></div>
-  <div id="tab-admin" class="tp"></div>
+
 </main>
 
 
@@ -258,24 +258,7 @@ let liveGames = [];    // all games for scores tab
 let curTab = 'standings';
 let curTeam = null;
 
-// Admin overrides: { playerName: { colIndex: points } }
-// e.g. { "Jaron Pierre Jr.": { 0: 18 } } means R1 = 18
-let adminOverrides = {};
-let adminUnlocked = false;
-let adminShowEdited = false;
-const ADMIN_PASSWORD = 'moose2026';
 
-// Load overrides from localStorage — persists across refreshes on same device
-async function loadOverrides() {
-  try {
-    const saved = localStorage.getItem('moose-admin-overrides');
-    if (saved) adminOverrides = JSON.parse(saved);
-  } catch(_) {}
-}
-
-async function saveOverrides() {
-  try { localStorage.setItem('moose-admin-overrides', JSON.stringify(adminOverrides)); } catch(_) {}
-}
 
 function getRoundForDate(dateStr) {
   const d = dateStr ? dateStr.substring(0, 10) : '';
@@ -301,24 +284,11 @@ function isEliminated(p) {
 }
 
 function getPlayerPts(p) {
-  // Admin override takes priority over everything
-  if (adminOverrides[p.n]) {
-    return Object.values(adminOverrides[p.n]).reduce((s, v) => s + (parseInt(v) || 0), 0);
-  }
-  // Live ESPN data (includes First Four pts folded into R1 for losers)
   return livePts[p.n] || 0;
 }
 
 function getPlayerRoundCols(p) {
   const cols = [null, null, null, null, null, null];
-  // Admin override takes priority
-  if (adminOverrides[p.n]) {
-    Object.entries(adminOverrides[p.n]).forEach(([col, val]) => {
-      cols[parseInt(col)] = parseInt(val) || 0;
-    });
-    return cols;
-  }
-  // ESPN data — First Four losers have their FF pts already folded into R1 by fetchAll
   const rounds = roundPts[p.n] || {};
   Object.entries(ROUND_TO_COL).forEach(([round, col]) => {
     if (rounds[round] !== undefined) cols[col] = rounds[round];
@@ -478,7 +448,6 @@ function renderAll() {
   else if (curTab==='players') renderPlayers();
   else if (curTab==='scores') renderScores();
   else if (curTab==='draft') renderDraft();
-  else if (curTab==='admin') renderAdmin();
 }
 
 function showTab(tab) {
@@ -486,7 +455,7 @@ function showTab(tab) {
   if (tab === 'standings') curTeam = null;
   document.querySelectorAll('.tp').forEach(p => p.classList.remove('on'));
   document.getElementById('tab-'+tab).classList.add('on');
-  document.querySelectorAll('.tb').forEach((b,i) => b.classList.toggle('on', ['standings','players','scores','draft','admin'][i]===tab));
+  document.querySelectorAll('.tb').forEach((b,i) => b.classList.toggle('on', ['standings','players','scores','draft'][i]===tab));
   renderAll();
 }
 
@@ -698,166 +667,8 @@ function renderDraft() {
       h+='</div>';
     });
     document.getElementById('tab-draft').innerHTML = h+'</div>';
-    // DEBUG: show raw livePts sample
-    const sample = Object.entries(livePts).slice(0,3).map(([k,v])=>`${k}:${v}`).join(', ');
-    document.getElementById('tab-draft').innerHTML += `<p style="color:orange;font-size:11px;padding:8px">DEBUG livePts(${Object.keys(livePts).length}): ${sample||'EMPTY'}</p>`;
   } catch(e) { document.getElementById('tab-draft').innerHTML = '<p style="color:red;padding:1rem">Draft error: ' + e.message + '</p>'; }
 }
-
-
-// ── ADMIN ─────────────────────────────────────────────────────────────────────
-function renderAdmin() {
-  const el = document.getElementById('tab-admin');
-
-  if (!adminUnlocked) {
-    el.innerHTML = `
-      <div style="max-width:340px;margin:60px auto;text-align:center">
-        <div style="font-size:24px;margin-bottom:8px">⚙️ Admin</div>
-        <div style="color:var(--mu);margin-bottom:24px;font-size:14px">Enter password to manage player scores</div>
-        <input id="admin-pw" type="password" placeholder="Password"
-          style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:10px;border:1px solid var(--bd2);background:var(--sur);color:var(--fg);font-size:15px;margin-bottom:10px"
-          onkeydown="if(event.key==='Enter') adminLogin()">
-        <button onclick="adminLogin()"
-          style="width:100%;padding:11px;border-radius:10px;background:var(--ac);color:#fff;border:none;font-size:15px;font-weight:600;cursor:pointer">
-          Unlock
-        </button>
-        <div id="admin-err" style="color:#e05;margin-top:10px;font-size:13px"></div>
-      </div>`;
-    return;
-  }
-
-  // Build all players list for search
-  const allPlayers = [];
-  TEAMS.forEach(t => t.players.forEach(p => allPlayers.push({p, owner: t.name})));
-  const search = (document.getElementById('admin-search')?.value || '').toLowerCase();
-  const filtered = allPlayers.filter(({p}) => {
-    const matchSearch = !search || p.n.toLowerCase().includes(search) || p.s.toLowerCase().includes(search);
-    const matchEdited = !adminShowEdited || (adminOverrides[p.n] && Object.keys(adminOverrides[p.n]).length > 0);
-    return matchSearch && matchEdited;
-  });
-
-  const rounds = ['R1','R2','R3','R4','R5','R6'];
-
-  let rows = filtered.map(({p, owner}) => {
-    const ov = adminOverrides[p.n] || {};
-    const hasOverride = Object.keys(ov).length > 0;
-    const inputs = rounds.map((r, i) => {
-      const val = ov[i] !== undefined ? ov[i] : '';
-      const espn = (() => { const c=getPlayerRoundColsESPN(p); return c[i]!==null?c[i]:''; })();
-      return `<td style="padding:4px 3px">
-        <input type="number" min="0" max="99"
-          style="width:44px;padding:5px 4px;border-radius:6px;border:1px solid ${ov[i]!==undefined?'var(--ac)':'var(--bd2)'};background:var(--sur);color:var(--fg);font-size:13px;text-align:center"
-          placeholder="${espn}"
-          value="${val}"
-          onchange="adminSetPts('${p.n.replace(/'/g,"\'")}', ${i}, this.value)"
-          title="${ov[i]!==undefined?'Override active — ESPN value: '+espn:'ESPN value: '+espn}">
-      </td>`;
-    }).join('');
-
-    return `<tr style="border-bottom:1px solid var(--bd1)">
-      <td style="padding:8px 6px">
-        <div style="font-weight:600;font-size:13px">${p.n}${hasOverride?` <span style="color:var(--ac);font-size:11px">✏️</span>`:''}</div>
-        <div style="color:var(--mu);font-size:11px">${p.s} · ${owner}</div>
-      </td>
-      ${inputs}
-      <td style="padding:4px 6px">
-        ${hasOverride ? `<button onclick="adminClear('${p.n.replace(/'/g,"\'")}')}"
-          style="font-size:11px;padding:3px 8px;border-radius:6px;background:var(--sur2);border:1px solid var(--bd2);color:var(--mu);cursor:pointer">Clear</button>` : ''}
-      </td>
-    </tr>`;
-  }).join('');
-
-  el.innerHTML = `
-    <div style="padding:0 0 80px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-        <div style="font-size:18px;font-weight:700">⚙️ Admin — Score Overrides</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button onclick="adminShowEdited=!adminShowEdited;renderAdmin()"
-            style="font-size:12px;padding:5px 12px;border-radius:8px;background:${adminShowEdited?'var(--ac)':'var(--sur2)'};border:1px solid ${adminShowEdited?'var(--ac)':'var(--bd2)'};color:${adminShowEdited?'#fff':'var(--fg)'};cursor:pointer">
-            ✏️ Edited
-          </button>
-          <button onclick="adminLock()"
-            style="font-size:12px;padding:5px 12px;border-radius:8px;background:var(--sur2);border:1px solid var(--bd2);color:var(--mu);cursor:pointer">
-            Lock
-          </button>
-        </div>
-      </div>
-      <div style="color:var(--mu);font-size:12px;margin-bottom:14px">
-        Enter a value to override ESPN data for that round. Leave blank to use ESPN data. Tap ✏️ Edited to filter to overridden players only.
-      </div>
-      <input id="admin-search" type="text" placeholder="🔍 Search player or school..."
-        style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:10px;border:1px solid var(--bd2);background:var(--sur);color:var(--fg);font-size:14px;margin-bottom:16px"
-        oninput="renderAdmin()">
-      <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
-          <thead>
-            <tr style="color:var(--mu);font-size:11px;border-bottom:1px solid var(--bd2)">
-              <th style="text-align:left;padding:6px 6px;font-weight:600">PLAYER</th>
-              <th style="padding:6px 3px">R1</th>
-              <th style="padding:6px 3px">R2</th>
-              <th style="padding:6px 3px">R3</th>
-              <th style="padding:6px 3px">R4</th>
-              <th style="padding:6px 3px">R5</th>
-              <th style="padding:6px 3px">R6</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-    </div>`;
-
-  // Restore search focus
-  const si = document.getElementById('admin-search');
-  if (si && search) { si.value = search; si.setSelectionRange(search.length, search.length); }
-}
-
-function getPlayerRoundColsESPN(p) {
-  // Raw ESPN data without overrides — for showing as placeholder
-  const cols = [null, null, null, null, null, null];
-  const rounds = roundPts[p.n] || {};
-  Object.entries(ROUND_TO_COL).forEach(([round, col]) => {
-    if (rounds[round] !== undefined) cols[col] = rounds[round];
-  });
-  return cols;
-}
-
-function adminLogin() {
-  const pw = document.getElementById('admin-pw')?.value || '';
-  if (pw === ADMIN_PASSWORD) {
-    adminUnlocked = true;
-    renderAdmin();
-  } else {
-    document.getElementById('admin-err').textContent = 'Incorrect password. Try again.';
-  }
-}
-
-function adminLock() {
-  adminUnlocked = false;
-  renderAdmin();
-}
-
-async function adminSetPts(playerName, colIndex, value) {
-  const val = value.trim();
-  if (!adminOverrides[playerName]) adminOverrides[playerName] = {};
-  if (val === '' || val === null) {
-    delete adminOverrides[playerName][colIndex];
-    if (Object.keys(adminOverrides[playerName]).length === 0) delete adminOverrides[playerName];
-  } else {
-    adminOverrides[playerName][colIndex] = parseInt(val) || 0;
-  }
-  await saveOverrides();
-  // Re-render all tabs to reflect the change
-  if (curTab === 'admin') renderAdmin();
-  else renderAll();
-}
-
-async function adminClear(playerName) {
-  delete adminOverrides[playerName];
-  await saveOverrides();
-  renderAdmin();
-}
-
 
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -869,9 +680,7 @@ async function manualRefresh() {
   btn.textContent = '↻ Refresh';
   btn.style.opacity = '1';
 }
-// Load overrides first, then render and start fetching
 (async () => {
-  await loadOverrides();
   renderAll();
   fetchAll();
   setInterval(fetchAll, 30000);
