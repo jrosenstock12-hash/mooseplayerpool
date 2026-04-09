@@ -679,25 +679,26 @@ function renderScores() {
 }
 
 function renderDraft() {
-  let h='<div class="dg">';
-  TEAMS.forEach(t => {
-    const total = teamTotal(t);
-    h+=`<div class="dc"><div class="dch"><div class="dco">${t.name}</div><div class="dct">${total}</div></div>`;
-    t.players.forEach((p,i)=>{
-      const pts = getPlayerPts(p);
-      const elim = isEliminated(p);
-      h+=`<div class="dp"${elim?' style="opacity:0.45"':''}>
-        <span class="dn">${i+1}</span>
-        <div>
-          <div class="dna">${p.n}</div>
-          <div class="dsc">${p.s}</div>
-        </div>
-        <span class="dpt" style="${pts===0?'color:var(--mu)':''}">${pts > 0 ? pts : '–'}</span>
-      </div>`;
+  try {
+    const ptsMap = {};
+    TEAMS.forEach(t => t.players.forEach(p => { ptsMap[p.n] = getPlayerPts(p); }));
+    let h='<div class="dg">';
+    TEAMS.forEach(t => {
+      const total = t.players.reduce((s,p) => s + (ptsMap[p.n]||0), 0);
+      h+=`<div class="dc"><div class="dch"><div class="dco">${t.name}</div><div class="dct">${total||'0'}</div></div>`;
+      t.players.forEach((p,i)=>{
+        const pts = ptsMap[p.n] || 0;
+        const elim = isEliminated(p);
+        h+=`<div class="dp"${elim?' style="opacity:0.45"':''}>`;
+        h+=`<span class="dn">${i+1}</span>`;
+        h+=`<div><div class="dna">${p.n}</div><div class="dsc">${p.s}</div></div>`;
+        h+=`<span class="dpt">${pts > 0 ? pts : '\u2013'}</span>`;
+        h+=`</div>`;
+      });
+      h+='</div>';
     });
-    h+='</div>';
-  });
-  document.getElementById('tab-draft').innerHTML = h+'</div>';
+    document.getElementById('tab-draft').innerHTML = h+'</div>';
+  } catch(e) { document.getElementById('tab-draft').innerHTML = '<p style="color:red;padding:1rem">Draft error: ' + e.message + '</p>'; }
 }
 
 
