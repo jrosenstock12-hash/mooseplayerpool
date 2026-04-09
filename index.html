@@ -681,10 +681,20 @@ function renderScores() {
 function renderDraft() {
   let h='<div class="dg">';
   TEAMS.forEach(t => {
-    h+=`<div class="dc"><div class="dch"><div class="dco">${t.name}</div></div>`;
+    const total = teamTotal(t);
+    h+=`<div class="dc"><div class="dch"><div class="dco">${t.name}</div><div style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:var(--ac)">${total}</div></div>`;
     t.players.forEach((p,i)=>{
-      const pts=getPlayerPts(p);
-      h+=`<div class="dp"><span class="dn">${i+1}</span><div><div class="dna">${p.n}</div><div class="dsc">${p.s}</div></div></div>`;
+      const pts = getPlayerPts(p);
+      const elim = isEliminated(p);
+      const ptsColor = pts > 0 ? 'var(--ac)' : 'var(--mu)';
+      h+=`<div class="dp" style="${elim?'opacity:0.45':''}">
+        <span class="dn">${i+1}</span>
+        <div style="flex:1;min-width:0">
+          <div class="dna">${p.n}</div>
+          <div class="dsc">${p.s}</div>
+        </div>
+        <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:${ptsColor};margin-left:auto;flex-shrink:0">${pts > 0 ? pts : '–'}</span>
+      </div>`;
     });
     h+='</div>';
   });
