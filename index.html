@@ -698,6 +698,9 @@ function renderDraft() {
       h+='</div>';
     });
     document.getElementById('tab-draft').innerHTML = h+'</div>';
+    // DEBUG: show raw livePts sample
+    const sample = Object.entries(livePts).slice(0,3).map(([k,v])=>`${k}:${v}`).join(', ');
+    document.getElementById('tab-draft').innerHTML += `<p style="color:orange;font-size:11px;padding:8px">DEBUG livePts(${Object.keys(livePts).length}): ${sample||'EMPTY'}</p>`;
   } catch(e) { document.getElementById('tab-draft').innerHTML = '<p style="color:red;padding:1rem">Draft error: ' + e.message + '</p>'; }
 }
 
